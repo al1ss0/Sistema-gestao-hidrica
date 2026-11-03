@@ -1,0 +1,39 @@
+{
+  "modelo": "XGBoost",
+  "hiperparametros": {
+    "learning_rate": 0.1,
+    "max_depth": 6,
+    "n_estimators": 200
+  },
+  "features": [
+    "cultura",
+    "solo",
+    "dias_apos_semeadura",
+    "kc",
+    "et0_7d",
+    "etc_7d",
+    "chuva_7d",
+    "chuva_14d",
+    "tmax_7d",
+    "ur_7d",
+    "vento_7d",
+    "rad_7d",
+    "dias_desde_chuva",
+    "dias_desde_irrigacao",
+    "lamina_ultima_irrigacao",
+    "etc_menos_chuva_desde_irrigacao"
+  ],
+  "metricas": {
+    "validacao": {
+      "f1_macro": 0.8284985370550891,
+      "acuracia_balanceada": 0.8338266369465007,
+      "recall_classe2": 0.94667343829355
+    },
+    "teste": {
+      "f1_macro": 0.8707547282892127,
+      "acuracia_balanceada": 0.8639676097439218,
+      "recall_classe2": 0.9028436018957346
+    }
+  },
+  "data": "2026-11-03T19:37:47"
+}

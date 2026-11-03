@@ -1,0 +1,6 @@
+Modelo selecionado: XGBoost
+F1-macro na validação: 0.8285
+Critério: maior F1-macro na validação; empate (diferença < 0.01) resolvido pelo modelo mais simples.
+Métricas de teste do modelo selecionado: retreinado em treino + validação e avaliado uma vez.
+Métricas de teste dos demais modelos: ajustados só no treino (apenas para a tabela).
+Limitação: os rótulos vêm do balanço hídrico FAO-56; as métricas medem concordância com a simulação, não validade agronômica.
