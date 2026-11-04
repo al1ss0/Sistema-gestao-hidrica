@@ -2,4 +2,4 @@
 __pycache__/
 .pytest_cache/
 data/*.csv
-models/*.joblib
+data/clima_meta.json

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titulo %}Sobre o projeto{% endblock %}
+{% block conteudo %}
+<section class="plataforma-cab">
+  <div class="container">
+    <h1 style="font-size:1.8rem">Sobre o projeto</h1>
+    <p class="muted" style="max-width:68ch;margin:0">Contexto acadêmico, finalidade e equipe de desenvolvimento.</p>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container texto">
+    <h2>Contexto acadêmico</h2>
+    <p>Este sistema é um trabalho acadêmico de Ciência da Computação: <em>Sistema inteligente de suporte à decisão para gestão hídrica em
+       propriedades rurais</em>. A área temática é Inteligência Artificial e Machine Learning aplicados à Agricultura Inteligente e à
+       Gestão de Recursos Hídricos.</p>
+    <p>O objetivo é analisar dados climáticos, características do solo e informações da cultura para estimar a necessidade hídrica de uma
+       propriedade rural e apoiar a decisão sobre irrigação, buscando reduzir desperdícios e melhorar a eficiência do uso da água.
+       A irrigação representa uma parcela significativa das demandas de uso da água no Brasil (ANA, 2021).</p>
+
+    <h2 style="margin-top:2rem">Finalidade da ferramenta</h2>
+    <ul>
+      <li>Protótipo de baixo custo, sem sensores nem equipamentos: usa dados meteorológicos públicos e gratuitos e ferramentas de código aberto.</li>
+      <li>Suporte à decisão: apresenta uma recomendação, os dados e os cálculos que a sustentam e suas limitações. A decisão é do produtor.</li>
+      <li>Não controla fisicamente nenhum sistema de irrigação.</li>
+    </ul>
+
+    <h2 style="margin-top:2rem">Aspectos éticos</h2>
+    <p>O sistema não coleta nem armazena informações pessoais dos produtores. Os dados climáticos são públicos, e as recomendações são apresentadas como apoio, não como substituição da decisão do usuário.</p>
+
+    <h2 style="margin-top:2rem">Privacidade e serviços de terceiros</h2>
+    <ul>
+      <li>O sistema não tem cadastro e não armazena a localização informada nem os dados da análise.</li>
+      <li>Para buscar o clima e a altitude, o município ou as coordenadas informados são enviados à <strong>NASA POWER</strong> e ao <strong>Open-Meteo</strong>. A hospedagem pode registrar o endereço IP e as páginas acessadas em seus logs.</li>
+      <li>Geocodificação e altitude: Open-Meteo (dados do GeoNames, licença CC BY 4.0), de uso gratuito não comercial. Clima: NASA POWER.</li>
+    </ul>
+
+    <h2 style="margin-top:2rem">Equipe de desenvolvimento</h2>
+    <ul class="equipe">
+      <li>Alisson de Morais Bosa — Gestor Técnico</li>
+      <li>Júlia de Lima Miranda — Gestora de Projeto</li>
+      <li>Carlos Eduardo Tonhelski Oliveira</li>
+      <li>Júlia Wonsick Pazzinatto</li>
+      <li>Maria Carolina Pegoraro</li>
+      <li>João Vinicius Lago dos Santos</li>
+      <li>Renan Terre Gomes</li>
+    </ul>
+
+    <h2 style="margin-top:2rem">Referências</h2>
+    <ul>
+      <li>ALLEN, R. G. et al. <em>Crop evapotranspiration: guidelines for computing crop water requirements</em>. FAO Irrigation and Drainage Paper 56. Roma: FAO, 1998.</li>
+      <li>AGÊNCIA NACIONAL DE ÁGUAS E SANEAMENTO BÁSICO (ANA). <em>Atlas irrigação: uso da água na agricultura irrigada</em>. 2. ed. Brasília: ANA, 2021.</li>
+      <li>AGÊNCIA NACIONAL DE ÁGUAS E SANEAMENTO BÁSICO (ANA). <em>Coeficientes técnicos de uso da água para a agricultura irrigada</em>. Brasília: ANA, 2019.</li>
+      <li>AGÊNCIA NACIONAL DE ÁGUAS E SANEAMENTO BÁSICO (ANA). <em>Estimativas de evapotranspiração real por sensoriamento remoto no Brasil</em>. Brasília: ANA, 2020.</li>
+      <li>FERREIRA, L. B. et al. Aplicativo de celular para manejo da irrigação com base no clima por meio de redes neurais artificiais. <em>Pesquisa Agropecuária Brasileira</em>, v. 55, e01839, 2020.</li>
+      <li>SILVA, C. de O. F. Inteligência artificial na pesquisa em irrigação e drenagem. <em>Irriga</em>, v. 28, n. 2, p. 417–426, 2023.</li>
+      <li>NASA POWER — Prediction Of Worldwide Energy Resources: fonte dos dados climáticos diários.</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

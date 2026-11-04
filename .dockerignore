@@ -1,0 +1,12 @@
+.git
+.github
+.venv
+.pytest_cache
+__pycache__
+*.pyc
+*.pdf
+tests
+# Dados gerados localmente: em produção o clima é buscado sob demanda e não vem da imagem.
+data/*.csv
+data/*.json
+data/*.txt

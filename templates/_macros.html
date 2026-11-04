@@ -1,0 +1,14 @@
+{% macro tabela_metricas(metricas) %}
+<div class="tabela"><table class="numerica">
+  <tr><th rowspan="2">Modelo</th><th colspan="3">Validação (2020–2021)</th><th colspan="3">Teste (2022–2024)</th></tr>
+  <tr><th>F1-macro</th><th>Acurácia balanceada</th><th>Recall da classe “irrigação recomendada”</th>
+      <th>F1-macro</th><th>Acurácia balanceada</th><th>Recall da classe “irrigação recomendada”</th></tr>
+  {% for _, l in metricas.iterrows() %}
+  <tr class="{{ 'sel' if l['selecionado'] }}">
+    <td>{{ l['modelo'] }}{% if l['selecionado'] %} (selecionado){% endif %}</td>
+    <td>{{ '%.3f'|format(l['f1_macro_validacao']) }}</td><td>{{ '%.3f'|format(l['acuracia_balanceada_validacao']) }}</td><td>{{ '%.3f'|format(l['recall_classe2_validacao']) }}</td>
+    <td>{{ '%.3f'|format(l['f1_macro_teste']) }}</td><td>{{ '%.3f'|format(l['acuracia_balanceada_teste']) }}</td><td>{{ '%.3f'|format(l['recall_classe2_teste']) }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endmacro %}

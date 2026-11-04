@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tabela_metricas %}
+{% block titulo %}Metodologia{% endblock %}
+{% block conteudo %}
+<section class="plataforma-cab">
+  <div class="container">
+    <h1 style="font-size:1.8rem">Metodologia e informações técnicas</h1>
+    <p class="muted" style="max-width:68ch;margin:0">Como os dados são obtidos, como o balanço de água é calculado e como o modelo de Machine Learning entra na recomendação.</p>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container texto">
+    <h2>Objetivo do sistema</h2>
+    <p>Apoiar a decisão sobre irrigação em propriedades rurais com um protótipo de baixo custo, sem sensores nem equipamentos:
+       a partir de clima, solo e cultura, estimar a situação de água no solo e classificar a necessidade de irrigar.
+       O sistema recomenda; a decisão e a operação continuam com o produtor.</p>
+
+    <h2 style="margin-top:2rem">Visão geral do fluxo</h2>
+    <div class="grade" style="max-width:none">
+      <div class="cartao"><span class="passo-num">1</span><h3>Clima diário</h3><p>Temperatura, umidade, vento, radiação e chuva da fonte de dados.</p></div>
+      <div class="cartao"><span class="passo-num">2</span><h3>Balanço hídrico FAO-56</h3><p>Demanda da cultura (ETc) menos chuva e irrigação, limitado pela água que o solo comporta.</p></div>
+      <div class="cartao"><span class="passo-num">3</span><h3>Classificação</h3><p>Três níveis a partir do déficit de água, calculados de forma determinística (referência).</p></div>
+      <div class="cartao"><span class="passo-num">4</span><h3>Modelo de ML</h3><p>Aprende a estimar a classe a partir de um resumo do clima recente, da cultura, do solo e da última irrigação.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0">
+  <div class="container texto">
+    <h2>Fontes de dados climáticos</h2>
+    {% if status_clima %}
+    <div class="faixa-dados" style="margin-bottom:1rem">
+      <div><strong>{{ status_clima.ultima_data }}</strong><span>Último dia disponível</span></div>
+      <div><strong>{{ status_clima.defasagem_dias }} dia{{ 's' if status_clima.defasagem_dias != 1 }}</strong><span>Defasagem em relação a hoje</span></div>
+      <div><strong>{{ status_clima.atualizado_em or 'não registrado' }}</strong><span>Base atualizada em</span></div>
+    </div>
+    {% endif %}
+    <ul>
+      <li><strong>Fonte usada:</strong> NASA POWER, série diária para o ponto de {{ local_nome }} (latitude −28,26; longitude −52,41; altitude 687 m).</li>
+      <li><strong>Natureza do dado:</strong> estimativas derivadas de reanálise/modelagem e de satélite. <em>Não são medições de uma estação meteorológica</em> e não são previsões: referem-se a dias que já ocorreram.</li>
+      <li><strong>Defasagem:</strong> os dias mais recentes ainda não estão completos na fonte. Esses dias são descartados, nunca preenchidos ou inventados; a análise vai até o último dia completo. A radiação solar costuma ser a variável que demora mais.</li>
+      <li><strong>Revisões:</strong> valores recentes são provisórios e podem ser revisados. Cada atualização baixa novamente os últimos 30 dias para incorporar revisões, e preserva o restante do histórico.</li>
+      <li><strong>Atualização:</strong> automática ao iniciar o sistema (uma vez por dia, havendo internet) e manual pelo botão da plataforma ou por <code>python atualizar_clima.py</code>.</li>
+      <li><strong>Localização escolhida pelo agricultor:</strong> por município (usamos a sede, geocodificada pelo Open-Meteo) ou por coordenadas, em qualquer região do Brasil. A posição de quem acessa o sistema nunca é usada. A altitude vem do modelo digital de elevação do Open-Meteo (ou é informada pelo usuário; na falta de ambas, usa-se a altitude média da célula da grade da NASA).</li>
+      <li><strong>Clima por localidade:</strong> para cada análise, o sistema consulta a NASA POWER para o período da semeadura até a data da análise. A grade da fonte tem cerca de 50 km: o resultado representa a região da propriedade, não o ponto exato. As consultas ficam em cache por 6 horas.</li>
+      <li><strong>Análises históricas:</strong> continuam possíveis para qualquer data desde {{ status_clima.primeira_data if status_clima else '2010' }}.</li>
+    </ul>
+
+    <h2 style="margin-top:2rem" id="variaveis">Variáveis consideradas</h2>
+    <div class="tabela"><table>
+      <tr><th>Variável</th><th>Origem</th><th>Uso</th></tr>
+      <tr><td>Temperatura máxima e mínima (°C)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+      <tr><td>Umidade relativa (%)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+      <tr><td>Velocidade do vento a 2 m (m/s)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+      <tr><td>Radiação solar (MJ/m²/dia)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+      <tr><td>Precipitação (mm/dia)</td><td>NASA POWER</td><td>Balanço hídrico e features</td></tr>
+      <tr><td>Cultura e data de semeadura</td><td>Usuário</td><td>Estágio, Kc, ciclo e profundidade de raiz</td></tr>
+      <tr><td>Tipo de solo</td><td>Usuário</td><td>Capacidade de campo e ponto de murcha (TAW/RAW)</td></tr>
+      <tr><td>Última irrigação (data e lâmina)</td><td>Usuário</td><td>Balanço hídrico e features</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0">
+  <div class="container texto">
+    <h2>Cálculos de referência (FAO-56)</h2>
+    <ul>
+      <li><strong>ET0:</strong> evapotranspiração de referência diária pelo método de Penman-Monteith.</li>
+      <li><strong>ETc = Kc × ET0:</strong> demanda da cultura. O Kc varia com o estágio (inicial, desenvolvimento, intermediário, final).</li>
+      <li><strong>TAW = 1000 × (θcc − θpm) × Zr:</strong> água total disponível na zona das raízes (mm).</li>
+      <li><strong>RAW = p × TAW:</strong> água facilmente disponível; acima desse déficit a cultura passa a sofrer estresse hídrico.</li>
+      <li><strong>Dr:</strong> déficit hídrico do dia = Dr do dia anterior − chuva − irrigação + ETc, limitado entre 0 e TAW.</li>
+    </ul>
+
+    <h3>Parâmetros por cultura e solo</h3>
+    <div class="tabela"><table>
+      <tr><th>Cultura</th><th>Kc ini / mid / end</th><th>Estágios (dias)</th><th>Raiz Zr (m)</th><th>Fator p</th></tr>
+      {% for nome, c in culturas.items() %}
+      <tr><td>{{ nome|capitalize }}</td><td>{{ c.kc_ini }} / {{ c.kc_mid }} / {{ c.kc_end }}</td><td>{{ c.estagios|join(' / ') }} (ciclo {{ c.ciclo }})</td><td>{{ c.zr }}</td><td>{{ c.p }}</td></tr>
+      {% endfor %}
+    </table></div>
+    <div class="tabela" style="margin-top:.8rem"><table>
+      <tr><th>Solo</th><th>Capacidade de campo (m³/m³)</th><th>Ponto de murcha (m³/m³)</th></tr>
+      {% for nome, s in solos.items() %}<tr><td>{{ nome|capitalize }}</td><td>{{ s.fc }}</td><td>{{ s.wp }}</td></tr>{% endfor %}
+    </table></div>
+    <p class="muted" style="margin-top:.6rem">Valores de referência do FAO-56 usados no protótipo; ainda devem ser conferidos e ajustados à realidade de cada propriedade.</p>
+
+    <h2 style="margin-top:2rem">Critérios para recomendar a irrigação</h2>
+    <div class="tabela"><table>
+      <tr><th>Classe</th><th>Condição sobre o déficit Dr</th><th>Origem do critério</th></tr>
+      <tr><td>{{ nomes_classes[0] }}</td><td>Dr &lt; {{ alpha }} × RAW</td><td>Limite de alerta definido pela equipe</td></tr>
+      <tr><td>{{ nomes_classes[1] }}</td><td>{{ alpha }} × RAW ≤ Dr &lt; RAW</td><td>Limite de alerta definido pela equipe</td></tr>
+      <tr><td>{{ nomes_classes[2] }}</td><td>Dr ≥ RAW</td><td>Limiar de estresse do FAO-56</td></tr>
+    </table></div>
+    <p class="muted" style="margin-top:.6rem">O fator {{ alpha }} do alerta é uma escolha de projeto, não um valor agronômico validado.</p>
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0">
+  <div class="container texto">
+    <h2>Modelo de Machine Learning</h2>
+    <p>Como não existem dados reais rotulados de “precisa irrigar”, os rótulos de treino são <strong>gerados pelo balanço hídrico</strong>:
+       1.350 safras simuladas (3 culturas × 3 solos × 5 datas de semeadura × 15 anos × 2 políticas de irrigação, sequeiro e irrigado)
+       sobre o clima real da fonte. O modelo aprende a reproduzir essa classificação a partir de variáveis resumidas
+       (chuva e ETc de 7 e 14 dias, médias climáticas de 7 dias, dias desde a última chuva e irrigação, cultura, solo, Kc),
+       sem receber o déficit Dr.</p>
+    <ul>
+      <li><strong>Divisão por ano de semeadura:</strong> treino {{ anos_treino[0] }}–{{ anos_treino[1] }}, validação {{ anos_validacao|join('–') }}, teste {{ anos_teste|join(', ') }} (nunca aleatória, para evitar vazamento entre dias da mesma safra).</li>
+      <li><strong>Modelos comparados:</strong> regressão logística regularizada, Random Forest, XGBoost, MLP e um modelo de base (sempre a classe mais frequente).</li>
+      <li><strong>Seleção:</strong> maior F1-macro na validação; o selecionado foi retreinado em treino + validação e avaliado uma vez no teste.</li>
+    </ul>
+    {% if metricas is not none %}
+    {{ tabela_metricas(metricas) }}
+    <p class="muted" style="margin-top:.6rem">Métricas calculadas na execução do pipeline. Os modelos não selecionados foram avaliados com ajuste só no treino.{% if metadata %} Modelo em uso: <strong>{{ metadata.modelo }}</strong>, treinado em {{ metadata.data[:10] }}.{% endif %}</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0" id="limitacoes">
+  <div class="container texto">
+    <h2>Limitações da ferramenta</h2>
+    <ul>
+      <li><strong>Rótulos simulados:</strong> o desempenho do modelo mede concordância com o balanço FAO-56, não acerto da decisão em campo. Uma métrica alta não prova validade agronômica, e não houve validação em campo.</li>
+      <li><strong>Dados estimados, não medidos:</strong> o clima vem de reanálise/satélite para um ponto único; pode diferir do que ocorreu na propriedade, principalmente a chuva local.</li>
+      <li><strong>Domínio do modelo:</strong> o modelo foi treinado só com o clima de {{ local_nome }} e com análises de outubro a maio. Fora disso (localidade a mais de {{ raio_km }} km do ponto de treino ou data de junho a setembro) o resultado do modelo seria extrapolação; nesses casos o resultado principal é o cálculo de referência FAO-56, que vale para qualquer lugar, e o modelo é mostrado apenas como estimativa complementar.</li>
+      <li><strong>Defasagem:</strong> a análise vai até o último dia completo da fonte, que pode ser alguns dias antes de hoje. Não são usadas previsões do tempo.</li>
+      <li><strong>Simplificações do balanço:</strong> solo na capacidade de campo na semeadura, precipitação efetiva igual à total, sem ascensão capilar, sem ajuste por estresse e profundidade de raiz constante.</li>
+      <li><strong>Parâmetros de referência:</strong> Kc, estágios, raízes, fator p e umidades do solo precisam ser conferidos e ajustados.</li>
+      <li><strong>Abrangência:</strong> uma localidade ({{ local_nome }}), três culturas e três classes de solo.</li>
+      <li><strong>Escopo:</strong> o sistema não controla irrigação, não calcula a lâmina bruta (depende da eficiência do sistema) e não garante economia de água.</li>
+    </ul>
+  </div>
+</section>
+{% endblock %}

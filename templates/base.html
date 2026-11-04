@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block titulo %}HidroDecisão{% endblock %} · Gestão hídrica em propriedades rurais</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="topo">
+  <div class="container">
+    <a class="marca" href="{{ url_for('inicio') }}">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+        <path d="M17 3C12 10 7 14.5 7 20a10 10 0 0 0 20 0C27 14.5 22 10 17 3Z" fill="#66d28a"/>
+        <path d="M17 30c-2-6 0-10 5-14" stroke="#0f3b27" stroke-width="2" fill="none" stroke-linecap="round"/>
+      </svg>
+      <span>HidroDecisão<small>Gestão hídrica em propriedades rurais</small></span>
+    </a>
+    <nav class="menu" aria-label="Navegação principal">
+      <a href="{{ url_for('inicio') }}" {% if pagina == 'inicio' %}aria-current="page"{% endif %}>Início</a>
+      <a href="{{ url_for('analise') }}" {% if pagina == 'analise' %}aria-current="page"{% endif %}>Plataforma de análise</a>
+      <a href="{{ url_for('metodologia') }}" {% if pagina == 'metodologia' %}aria-current="page"{% endif %}>Metodologia</a>
+      <a href="{{ url_for('sobre') }}" {% if pagina == 'sobre' %}aria-current="page"{% endif %}>Sobre o projeto</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+{% block conteudo %}{% endblock %}
+</main>
+
+<footer class="rodape">
+  <div class="container">
+    <div>
+      <strong>HidroDecisão</strong> — projeto acadêmico de Ciência da Computação.<br>
+      Ferramenta de suporte à decisão: não substitui avaliação técnica nem controla equipamentos de irrigação.
+    </div>
+    <div>
+      {% if status_clima %}
+        <span class="status-dados {{ 'antigo' if status_clima.defasagem_dias > 7 }}"><i></i>
+          Clima até {{ status_clima.ultima_data }}
+          {%- if status_clima.atualizado_em %} · atualizado em {{ status_clima.atualizado_em }}{% endif %}</span><br>
+        <span>{{ status_clima.fonte_nome }}</span>
+      {% else %}
+        <span class="status-dados"><i></i> Clima obtido sob demanda para cada localidade</span><br>
+        <span>NASA POWER (reanálise/satélite, não é medição de estação)</span>
+      {% endif %}
+    </div>
+  </div>
+</footer>
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

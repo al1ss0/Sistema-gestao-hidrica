@@ -5,8 +5,11 @@ LAT = -28.26
 LON = -52.41
 ALT = 687
 
+LOCAL_NOME = "Passo Fundo – RS"
+
+# Início da série histórica usada no treino. Não há data final fixa: o clima vai até o
+# último dia completo disponível na fonte (ver hidrica/clima.py).
 DATA_INICIO = "2010-01-01"
-DATA_FIM = "2025-06-30"
 
 # Parâmetros de referência do FAO-56 (spec.md, seção 5): a equipe deve conferi-los.
 CULTURAS = {
@@ -19,6 +22,27 @@ SOLOS = {
     "arenoso": {"fc": 0.12, "wp": 0.045},
     "médio": {"fc": 0.25, "wp": 0.12},
     "argiloso": {"fc": 0.36, "wp": 0.22},
+}
+
+# Domínio em que o modelo foi treinado (ver hidrica/localidade.py, motivos_extrapolacao):
+# um único ponto de clima (Passo Fundo) e análises de outubro a maio, que é o que as safras
+# simuladas (semeadura em out-dez, ciclos de 110 a 150 dias) cobrem. Fora disso o resultado
+# do modelo é extrapolação. O raio de 50 km é uma escolha conservadora: a grade da NASA
+# POWER tem células de cerca de 50 a 60 km.
+RAIO_DOMINIO_KM = 50
+MESES_ANALISE_TREINO = (10, 11, 12, 1, 2, 3, 4, 5)
+
+# Este protótipo atende propriedades no Brasil (caixa delimitadora aproximada).
+BRASIL_LAT = (-34.0, 6.0)
+BRASIL_LON = (-74.5, -28.0)
+
+UFS = {
+    "AC": "Acre", "AL": "Alagoas", "AP": "Amapá", "AM": "Amazonas", "BA": "Bahia", "CE": "Ceará",
+    "DF": "Distrito Federal", "ES": "Espírito Santo", "GO": "Goiás", "MA": "Maranhão",
+    "MT": "Mato Grosso", "MS": "Mato Grosso do Sul", "MG": "Minas Gerais", "PA": "Pará",
+    "PB": "Paraíba", "PR": "Paraná", "PE": "Pernambuco", "PI": "Piauí", "RJ": "Rio de Janeiro",
+    "RN": "Rio Grande do Norte", "RS": "Rio Grande do Sul", "RO": "Rondônia", "RR": "Roraima",
+    "SC": "Santa Catarina", "SP": "São Paulo", "SE": "Sergipe", "TO": "Tocantins",
 }
 
 ALPHA = 0.5

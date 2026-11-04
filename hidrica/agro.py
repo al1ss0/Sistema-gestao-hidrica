@@ -63,6 +63,19 @@ def kc(cultura, d):
     return c["kc_mid"] + frac * (c["kc_end"] - c["kc_mid"])
 
 
+ESTAGIOS = ("Inicial", "Desenvolvimento", "Intermediário", "Final")
+
+
+def estagio(cultura, d):
+    """Nome do estágio fenológico no dia d após a semeadura."""
+    limite = 0
+    for nome, dias in zip(ESTAGIOS, config.CULTURAS[cultura]["estagios"]):
+        limite += dias
+        if d < limite:
+            return nome
+    return ESTAGIOS[-1]
+
+
 def taw(cultura, solo):
     s = config.SOLOS[solo]
     return 1000 * (s["fc"] - s["wp"]) * config.CULTURAS[cultura]["zr"]

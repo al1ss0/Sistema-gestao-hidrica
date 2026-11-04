@@ -1,5 +1,7 @@
+import pandas as pd
 import pytest
 
+from hidrica import clima as mod_clima
 from hidrica import modelo as mod_modelo
 from hidrica import recomendacao
 

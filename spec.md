@@ -21,15 +21,22 @@ A resposta vem de um modelo de Machine Learning escolhido entre Random Forest, X
 
 | Item | Valor |
 |---|---|
-| Localidade | Passo Fundo – RS (lat −28,26; lon −52,41; altitude 687 m) |
+| Localidade | Escolhida pelo agricultor (município ou coordenadas, no Brasil). Local de referência e de treino do modelo: Passo Fundo – RS (lat −28,26; lon −52,41; altitude 687 m) |
 | Fonte do clima | NASA POWER, série diária (fallback: clima sintético gerado pelo próprio sistema) |
-| Período do clima | 2010-01-01 a 2025-06-30 |
+| Período do clima | 2010-01-01 até o último dia completo disponível na fonte (sem data final fixa; atualizado automaticamente) |
 | Culturas | milho, soja, feijão |
 | Solos | arenoso, médio, argiloso |
 | Linguagem | Python 3.14 (fallback: 3.12) |
 | Bibliotecas | pandas, numpy, scikit-learn, xgboost, joblib, matplotlib, flask, pytest |
-| Interface | Flask, uma única página |
+| Interface | Flask, quatro páginas: Início, Plataforma de análise, Metodologia e Sobre o projeto |
 | Persistência | Arquivos CSV e joblib; sem banco de dados |
+
+## 2.1 Localização da propriedade e domínio do modelo
+
+- **Quem escolhe:** o agricultor, por **município** (sede, geocodificada pelo Open-Meteo) ou por **coordenadas** (Brasil, altitude opcional). A localização de quem acessa nunca é usada.
+- **Clima por localidade:** a cada análise busca-se na NASA POWER o período da semeadura à data da análise para o ponto escolhido (grade de cerca de 50 km), com cache de 6 horas. A altitude vem do Open-Meteo, do usuário ou, na falta, da célula da grade da NASA. O ET0 é calculado com a latitude e a altitude da localidade.
+- **Domínio do modelo:** o modelo foi treinado com o clima de um único ponto (Passo Fundo) e com análises de outubro a maio. Se a localidade está a mais de 50 km desse ponto (`config.RAIO_DOMINIO_KM`) ou a análise cai em junho–setembro, o resultado do modelo é **extrapolação**. Nesse caso o resultado principal é o cálculo de referência (balanço hídrico FAO-56, válido em qualquer lugar) e o modelo é exibido apenas como estimativa complementar, com aviso. Ampliar o domínio exige treinar com o clima de outras regiões.
+- **Produção:** sem `data/clima.csv`, tudo é obtido sob demanda. Há limite de consultas por minuto por IP, cabeçalhos de segurança e `/saude` para verificação da hospedagem (ver DEPLOY.md).
 
 ## 3. Como o sistema funciona
 
@@ -46,8 +53,12 @@ Usuário → formulário Flask → features do dia → modelo → classe + gráf
 URL de download (uma requisição):
 
 ```
-https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,RH2M,WS2M,ALLSKY_SFC_SW_DWN,PRECTOTCORR&community=AG&longitude=-52.41&latitude=-28.26&start=20100101&end=20250630&format=JSON
+https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,RH2M,WS2M,ALLSKY_SFC_SW_DWN,PRECTOTCORR&community=AG&longitude=-52.41&latitude=-28.26&start=20100101&end=AAAAMMDD&format=JSON
 ```
+
+O fim (`end`) é a data atual. A fonte tem defasagem de alguns dias e devolve `-999` para os dias ainda incompletos (a radiação é a última variável a ficar pronta). **Esses dias são descartados, nunca interpolados nem preenchidos**: a série termina no último dia em que todas as variáveis existem. Os dados da NASA POWER são estimativas de reanálise/modelagem e satélite, não medições de estação, e os valores recentes são provisórios.
+
+**Atualização:** `python atualizar_clima.py` (ou o botão da plataforma, ou automática ao iniciar o app, uma vez por dia) baixa só o trecho recente, repetindo os últimos 30 dias para receber revisões da fonte, e preserva o histórico. Os metadados ficam em `data/clima_meta.json` (fonte, tipo do dado, primeira e última data, momento da atualização).
 
 Arquivo `data/clima.csv`, uma linha por dia:
 
@@ -206,16 +217,18 @@ A regressão logística é o modelo linear de referência; o MLP e a regressão 
 - `models/modelo.joblib`
 - `models/metadata.json`: nome, hiperparâmetros, lista de features, métricas e data.
 
-## 9. Interface (Flask, página `/`)
+## 9. Interface (Flask)
 
-**Formulário (GET `/`, POST `/`):**
+Rotas: `/` (início), `/analise` (plataforma: formulário e resultado), `/metodologia`, `/sobre` e `POST /atualizar-dados`. O formulário é organizado em cinco grupos: informações da cultura, características do solo, ciclo da cultura, última irrigação e data de referência.
+
+**Formulário (GET e POST `/analise`):**
 
 | Campo | Regra |
 |---|---|
 | cultura | select |
 | solo | select |
 | data de semeadura | obrigatória |
-| data da análise | obrigatória; posterior à semeadura; até o fim do ciclo; dentro do período de `data/clima.csv` |
+| data da análise | obrigatória; posterior à semeadura; até o fim do ciclo; **não pode ser posterior a hoje nem ao último dia completo do clima carregado** (limite dinâmico, sem data fixa no código); o padrão é esse último dia |
 | data da última irrigação | opcional; entre a semeadura e a data da análise |
 | lâmina da última irrigação (mm) | obrigatória se houver data; maior que 0 |
 
@@ -223,12 +236,15 @@ Se houver erro, a página reexibe o formulário com a mensagem em português e n
 
 **Resultado (na mesma página):**
 
-1. A classe do modelo (texto da seção 1) e as probabilidades de cada classe.
-2. A classe de referência calculada pelo balanço FAO-56, com Dr e RAW em mm, e um alerta se for diferente da classe do modelo.
-3. A lâmina recomendada (mm), nas classes 1 e 2.
-4. Um gráfico PNG dos últimos 30 dias: barras de chuva e irrigação, linha de ETc e, em um segundo painel, Dr com uma linha horizontal no RAW.
-5. A tabela `reports/metricas.csv`.
-6. Um aviso fixo: "Recomendação de suporte à decisão, baseada em dados climáticos e em rótulos simulados pelo método FAO-56. Não substitui avaliação técnica nem garante economia de água."
+1. A classe do modelo (texto da seção 1) em destaque colorido com ícone e texto (nunca só cor) e as probabilidades de cada classe.
+2. A classe de referência calculada pelo balanço FAO-56 e um alerta se for diferente da classe do modelo.
+3. Indicadores calculados pelo sistema: déficit hídrico Dr, água disponível no solo (TAW − Dr), percentual da água disponível já consumido, RAW, lâmina líquida de reposição (nas classes 1 e 2) e Kc/estágio, além de um medidor de Dr entre 0 e TAW com os limites de alerta e de estresse.
+4. Recomendações de manejo em texto, derivadas apenas desses valores.
+5. Dois gráficos PNG: (a) Dr desde a semeadura, com RAW, TAW e as irrigações informadas; (b) chuva, irrigação e ETc dos últimos 30 dias, com tabela diária opcional.
+6. Indicadores climáticos dos 7 dias anteriores (chuva, ET0, ETc, temperatura, umidade, vento, radiação, dias desde a última chuva e irrigação).
+7. Dados utilizados (entradas, período, fonte e tipo do dado climático, última data disponível, modelo) e limitações.
+8. A tabela de métricas de `reports/metricas.csv` (recolhida na plataforma, completa na Metodologia).
+9. Um aviso fixo: "Recomendação de suporte à decisão, baseada em dados climáticos e em rótulos simulados pelo método FAO-56. Não substitui avaliação técnica nem garante economia de água."
 
 ## 10. Estrutura de arquivos
 
@@ -242,7 +258,7 @@ hidrica/modelo.py         treinar_e_avaliar(), carregar_modelo()
 hidrica/recomendacao.py   recomendar(entrada) usado pela interface
 pipeline.py               executa clima → dataset → treino
 app.py                    Flask
-templates/index.html
+templates/ e static/    páginas (base, início, análise, metodologia, sobre), CSS e JS
 tests/                    testes pytest
 data/  models/  reports/  saídas geradas (não versionar data/ e models/)
 requirements.txt  .gitignore  README.md

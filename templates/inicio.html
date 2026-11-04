@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+<section class="hero">
+  <div class="container">
+    <span class="selo">Projeto acadêmico</span>
+    <h1>Sistema inteligente de suporte à decisão para gestão hídrica</h1>
+    <p class="lead">
+      Estima a situação de água no solo de uma lavoura a partir do clima, do solo e da cultura, e indica se há
+      necessidade de irrigar. Você escolhe o município ou as coordenadas da propriedade, em qualquer região do
+      Brasil. O objetivo é apoiar o produtor a usar a água com mais critério.
+    </p>
+    <div class="acoes">
+      <a class="btn btn-primario" href="{{ url_for('analise') }}#plataforma">Acessar a plataforma de análise</a>
+      <a class="btn btn-contorno" href="{{ url_for('metodologia') }}">Ver a metodologia</a>
+    </div>
+  </div>
+</section>
+
+<section class="secao">
+  <div class="container">
+    <div class="secao-titulo">
+      <h2>Por que a gestão hídrica importa</h2>
+      <p>
+        A irrigação responde por uma parcela significativa das demandas de uso da água no Brasil (ANA, 2021).
+        Irrigar sem critério desperdiça água e energia; irrigar de menos expõe a lavoura ao estresse hídrico.
+        Decidir quando e quanto irrigar a partir de dados é um caminho para usar esse recurso com mais eficiência.
+      </p>
+    </div>
+    <div class="grade">
+      <div class="cartao">
+        <span class="passo-num">1</span>
+        <h3>Você informa a lavoura</h3>
+        <p>Cultura, tipo de solo, data de semeadura, data da análise e, se houver, a última irrigação.</p>
+      </div>
+      <div class="cartao">
+        <span class="passo-num">2</span>
+        <h3>O sistema reconstrói o balanço de água</h3>
+        <p>Usa o clima diário da localidade para calcular a demanda da cultura e quanto de água resta no solo.</p>
+      </div>
+      <div class="cartao">
+        <span class="passo-num">3</span>
+        <h3>Você recebe uma recomendação</h3>
+        <p>Um modelo de Machine Learning classifica a necessidade de irrigação, comparada com o cálculo de referência.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% if status_clima %}
+<section class="container">
+  <div class="faixa-dados" role="group" aria-label="Situação dos dados climáticos">
+    <div><strong>{{ local_nome }}</strong><span>Localidade</span></div>
+    <div><strong>{{ status_clima.ultima_data }}</strong><span>Último dia com dados climáticos</span></div>
+    <div><strong>{{ status_clima.defasagem_dias }} dia{{ 's' if status_clima.defasagem_dias != 1 }}</strong><span>Defasagem em relação a hoje</span></div>
+    <div style="flex:1 1 260px"><strong>{{ status_clima.fonte_nome }}</strong><span>{{ status_clima.tipo_dado }}</span></div>
+  </div>
+</section>
+{% endif %}
+
+<section class="secao">
+  <div class="container">
+    <div class="secao-titulo">
+      <h2>Comece com um exemplo</h2>
+      <p>Os exemplos apenas preenchem o formulário; o resultado é calculado com o clima real da fonte e o modelo.</p>
+    </div>
+    <div class="grade">
+      {% for p in presets %}
+      <a class="cartao exemplo" href="{{ url_for('analise', **p.consulta) }}#plataforma">
+        <h3>{{ p.titulo }}</h3>
+        <p class="rotulo">{{ p.rotulo }}</p>
+        <p class="muted">{{ p.cultura|capitalize }} · solo {{ p.solo }} · {{ p.local_rotulo }}</p>
+        <span class="ir">Preencher e analisar →</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0">
+  <div class="container">
+    <div class="limites">
+      <strong>Importante:</strong> o sistema apenas recomenda; ele não controla equipamentos e não garante economia
+      de água. Os rótulos usados para treinar o modelo vêm de um balanço hídrico simulado (método FAO-56), portanto
+      o desempenho do modelo mede concordância com essa simulação, e não validade em campo.
+      <a href="{{ url_for('metodologia') }}#limitacoes">Veja as limitações</a>.
+    </div>
+  </div>
+</section>
+{% endblock %}

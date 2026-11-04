@@ -1,0 +1,16 @@
+# Blueprint do Render (https://render.com): cria o serviço web a partir deste repositório.
+# Passo a passo em DEPLOY.md.
+services:
+  - type: web
+    name: hidrodecisao
+    runtime: docker
+    plan: free
+    healthCheckPath: /saude
+    autoDeploy: true   # novo deploy a cada push na branch principal
+    envVars:
+      - key: HIDRO_PROXY          # atrás do proxy do Render: lê o IP real do visitante (limite de consultas)
+        value: "1"
+      - key: HIDRO_ATUALIZAR      # o clima é buscado sob demanda; não há arquivo salvo para atualizar
+        value: "0"
+      - key: HIDRO_LIMITE_POR_MIN # consultas por minuto por visitante às APIs externas
+        value: "30"
