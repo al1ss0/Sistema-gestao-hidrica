@@ -11,6 +11,8 @@
   {% endif %}
 {% endmacro %}
 
+{# Arredonda meio para cima (12,5 vira 13), como se espera ao ler um número na tela. #}
+{% macro arred(x) %}{{ ((x + 0.5)|round(0, 'floor'))|int }}{% endmacro %}
 {% block conteudo %}
 <section class="plataforma-cab">
   <div class="container">
@@ -210,24 +212,52 @@
         </div>
       {% endif %}
 
-      <div class="kpis">
-        <div class="kpi"><div class="valor">{{ res.dr }} <small>mm</small></div><div class="nome">Déficit hídrico no solo (Dr)</div></div>
-        <div class="kpi"><div class="valor">{{ res.agua_disponivel }} <small>mm</small></div><div class="nome">Água disponível no solo (de {{ res.taw }} mm)</div></div>
-        <div class="kpi"><div class="valor">{{ res.pct_esgotada }} <small>%</small></div><div class="nome">Da água disponível já consumida</div></div>
-        <div class="kpi"><div class="valor">{{ res.raw }} <small>mm</small></div><div class="nome">Limite de estresse (RAW)</div></div>
-        <div class="kpi"><div class="valor">{% if res.lamina is not none %}{{ res.lamina }} <small>mm</small>{% else %}—{% endif %}</div><div class="nome">Lâmina líquida de reposição</div></div>
-        <div class="kpi"><div class="valor">{{ res.kc }}</div><div class="nome">Kc · estágio {{ res.estagio|lower }}</div></div>
+      {% set restante = [[100 - res.pct_esgotada, 0]|max, 100]|min %}
+      {% set nivel = res.classe_referencia %}
+      {% set rotulos = ['Solo com água suficiente', 'Atenção: irrigar em breve', 'Irrigar agora'] %}
+      <div class="kpis-grandes">
+        <div class="kpi-grande">
+          <div class="nome">Água no solo</div>
+          <div class="valor">{{ arred(restante) }}<small>%</small></div>
+          <div class="sub">{{ '%g'|format(res.agua_disponivel) }} mm de {{ '%g'|format(res.taw) }} mm</div>
+        </div>
+        <div class="kpi-grande">
+          <div class="nome">Irrigar quanto</div>
+          {% if res.lamina is not none %}
+          <div class="valor">{{ '%g'|format(res.lamina) }}<small>mm</small></div>
+          <div class="sub">para encher o solo</div>
+          {% else %}
+          <div class="valor texto">Não precisa</div>
+          {% endif %}
+        </div>
+        <div class="kpi-grande">
+          <div class="nome">Chuva na semana</div>
+          <div class="valor">{{ arred(res.clima.chuva_7d) }}<small>mm</small></div>
+          <div class="sub">nos últimos 7 dias</div>
+        </div>
       </div>
 
       <div class="painel">
-        <h3>Situação hídrica atual do solo</h3>
-        <p class="legenda">A barra representa a água disponível total (TAW = {{ res.taw }} mm). O trecho azul é o déficit já consumido (Dr).</p>
-        <div class="medidor" role="img" aria-label="Déficit hídrico de {{ res.dr }} mm de {{ res.taw }} mm; limite de alerta em {{ res.alerta }} mm; limite de estresse em {{ res.raw }} mm">
-          <div class="nivel" style="width: {{ [res.pct_esgotada, 100]|min }}%"></div>
-          <div class="marca-limite cima" style="left: {{ res.pct_alerta }}%"><span>alerta {{ res.alerta }} mm</span></div>
-          <div class="marca-limite" style="left: {{ res.pct_raw }}%"><span>estresse (RAW) {{ res.raw }} mm</span></div>
+        <h3>Situação do solo</h3>
+        <p class="legenda grande">Quanto mais cheia, mais água tem no solo.</p>
+        <div class="barra-solo" role="img" aria-label="Água no solo: {{ arred(restante) }}%. {{ rotulos[nivel] }}">
+          <div class="enchimento n{{ nivel }}" style="width: {{ restante }}%"></div>
         </div>
-        <div class="medidor-escala"><span>0 mm</span><span>TAW = {{ res.taw }} mm</span></div>
+        <p class="situacao s{{ nivel }}">{{ icone(nivel) }}<span>{{ rotulos[nivel] }}</span></p>
+        <details>
+          <summary>Ver detalhes técnicos</summary>
+          <dl class="lista-dados">
+            <dt>Déficit hídrico (Dr)</dt><dd>{{ res.dr }} mm</dd>
+            <dt>Limite de alerta</dt><dd>{{ res.alerta }} mm</dd>
+            <dt>Limite de estresse (RAW)</dt><dd>{{ res.raw }} mm</dd>
+            <dt>Água disponível total (TAW)</dt><dd>{{ res.taw }} mm</dd>
+            <dt>Água disponível no solo</dt><dd>{{ res.agua_disponivel }} mm</dd>
+            <dt>Água disponível já consumida</dt><dd>{{ res.pct_esgotada }} %</dd>
+            {% if res.lamina is not none %}<dt>Lâmina líquida de reposição</dt><dd>{{ res.lamina }} mm</dd>{% endif %}
+            <dt>Coeficiente da cultura (Kc)</dt><dd>{{ res.kc }}</dd>
+            <dt>Estágio da cultura</dt><dd>{{ res.estagio }}</dd>
+          </dl>
+        </details>
       </div>
 
       <div class="dois">
@@ -275,19 +305,43 @@
       </div>
 
       <div class="painel">
-        <h3>Indicadores climáticos usados na análise</h3>
-        <p class="legenda">Resumo dos 7 dias que antecedem a data da análise, a partir da fonte de dados climáticos.</p>
-        <div class="kpis" style="margin:0">
-          <div class="kpi"><div class="valor">{{ res.clima.chuva_7d }} <small>mm</small></div><div class="nome">Chuva em 7 dias ({{ res.clima.chuva_14d }} mm em 14)</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.et0_7d }} <small>mm</small></div><div class="nome">Evapotranspiração de referência (ET0) em 7 dias</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.etc_7d }} <small>mm</small></div><div class="nome">Demanda da cultura (ETc) em 7 dias</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.tmax_7d }} <small>°C</small></div><div class="nome">Temperatura máxima média</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.ur_7d|int }} <small>%</small></div><div class="nome">Umidade relativa média</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.vento_7d }} <small>m/s</small></div><div class="nome">Vento médio a 2 m</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.rad_7d }} <small>MJ/m²</small></div><div class="nome">Radiação solar média diária</div></div>
-          <div class="kpi"><div class="valor">{{ res.clima.dias_desde_chuva }}{% if res.clima.dias_desde_chuva >= 60 %}+{% endif %} <small>dias</small></div><div class="nome">Desde a última chuva de 5 mm ou mais</div></div>
-          <div class="kpi"><div class="valor">{% if res.clima.dias_desde_irrigacao is none %}—{% else %}{{ res.clima.dias_desde_irrigacao }} <small>dias</small>{% endif %}</div><div class="nome">Desde a última irrigação informada</div></div>
+        <h3>Clima da última semana</h3>
+        <p class="legenda grande">Resumo dos últimos 7 dias.</p>
+        {% set sem_chuva = res.clima.dias_desde_chuva %}
+        {% set irrigou = res.clima.dias_desde_irrigacao %}
+        <div class="kpis-grandes">
+          <div class="kpi-grande">
+            <div class="nome">Calor</div>
+            <div class="valor">{{ arred(res.clima.tmax_7d) }}<small>°C</small></div>
+            <div class="sub">máxima média</div>
+          </div>
+          <div class="kpi-grande">
+            <div class="nome">Dias sem chuva</div>
+            <div class="valor">{{ sem_chuva }}{% if sem_chuva >= 60 %}+{% endif %}<small>{{ 'dia' if sem_chuva == 1 else 'dias' }}</small></div>
+            <div class="sub">desde uma chuva de 5 mm ou mais</div>
+          </div>
+          <div class="kpi-grande">
+            <div class="nome">Última irrigação</div>
+            {% if irrigou is none %}
+            <div class="valor texto">Não informada</div>
+            {% elif irrigou == 0 %}
+            <div class="valor texto">Hoje</div>
+            {% else %}
+            <div class="valor">{{ irrigou }}{% if irrigou >= 60 %}+{% endif %}<small>{{ 'dia atrás' if irrigou == 1 else 'dias atrás' }}</small></div>
+            {% endif %}
+          </div>
         </div>
+        <details>
+          <summary>Ver mais dados do clima</summary>
+          <dl class="lista-dados">
+            <dt>Chuva em 14 dias</dt><dd>{{ res.clima.chuva_14d }} mm</dd>
+            <dt>Evapotranspiração de referência (ET0), 7 dias</dt><dd>{{ res.clima.et0_7d }} mm</dd>
+            <dt>Demanda da cultura (ETc), 7 dias</dt><dd>{{ res.clima.etc_7d }} mm</dd>
+            <dt>Umidade relativa média</dt><dd>{{ res.clima.ur_7d|int }} %</dd>
+            <dt>Vento médio a 2 m</dt><dd>{{ res.clima.vento_7d }} m/s</dd>
+            <dt>Radiação solar média diária</dt><dd>{{ res.clima.rad_7d }} MJ/m²</dd>
+          </dl>
+        </details>
       </div>
 
       <div class="painel">

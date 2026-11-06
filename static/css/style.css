@@ -111,22 +111,11 @@ input:focus-visible, select:focus-visible, .btn:focus-visible, a:focus-visible, 
 .c0 { background: var(--ok-fundo); border-color: var(--ok); color: #1b4d1f; }
 .c1 { background: var(--atencao-fundo); border-color: var(--atencao-borda); color: #5c3700; }
 .c2 { background: var(--alerta-fundo); border-color: var(--alerta); color: #7d1b15; }
-.kpis { display: grid; gap: .8rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-block: 1rem; }
-.kpi { background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio); padding: .8rem .95rem; }
-.kpi .valor { font-size: 1.55rem; font-weight: 700; line-height: 1.1; }
-.kpi .valor small { font-size: .85rem; font-weight: 600; color: var(--tinta-suave); }
-.kpi .nome { font-size: .8rem; color: var(--tinta-suave); margin-top: .25rem; }
 .painel { background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio); padding: 1.1rem 1.2rem; margin-bottom: 1rem; box-shadow: var(--sombra); }
 .painel h3 { margin-bottom: .2rem; }
 .painel .legenda { font-size: .85rem; color: var(--tinta-suave); margin-bottom: .8rem; }
 .dois { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
 
-.medidor { position: relative; height: 22px; background: #e8ece9; border-radius: 6px; margin: 1.6rem 0 3.4rem; }
-.medidor .nivel { height: 100%; background: var(--azul-700); border-radius: 6px 0 0 6px; }
-.medidor .marca-limite { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--tinta); }
-.medidor .marca-limite span { position: absolute; top: 100%; transform: translateX(-50%); white-space: nowrap; font-size: .72rem; color: var(--tinta-suave); margin-top: 2px; }
-.medidor .marca-limite.cima span { top: auto; bottom: 100%; margin: 0 0 2px; }
-.medidor-escala { display: flex; justify-content: space-between; font-size: .75rem; color: var(--tinta-suave); margin-top: -1.2rem; }
 
 .barras { display: grid; gap: .55rem; }
 .barra-prob .topo-barra { display: flex; justify-content: space-between; font-size: .88rem; }
@@ -177,3 +166,24 @@ tr.sel td { background: var(--ok-fundo); font-weight: 600; }
 label.radio { flex-direction: row; align-items: center; gap: .5rem; font-weight: 600; cursor: pointer; }
 label.radio input { width: 1.1rem; height: 1.1rem; accent-color: var(--verde-700); padding: 0; }
 [data-local][hidden] { display: none !important; }
+
+/* Cartões grandes e barra do solo (leitura fácil: letras grandes, poucos termos técnicos) */
+.kpis-grandes { display: grid; gap: 1rem; grid-template-columns: 1fr; margin-block: 1rem; }
+@media (min-width: 760px) { .kpis-grandes { grid-template-columns: repeat(3, 1fr); } }
+.kpi-grande { background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio); padding: 1.1rem 1.25rem; box-shadow: var(--sombra); }
+.kpi-grande .nome { font-size: 1.15rem; font-weight: 700; color: var(--verde-900); }
+.kpi-grande .valor { font-size: 2.6rem; font-weight: 800; line-height: 1.1; color: var(--tinta); margin: .35rem 0 .25rem; }
+.kpi-grande .valor small { font-size: 1.15rem; font-weight: 700; color: var(--tinta-suave); margin-left: .3rem; }
+.kpi-grande .valor.texto { font-size: 1.9rem; }
+.kpi-grande .sub { font-size: 1.05rem; color: var(--tinta-suave); }
+.painel .legenda.grande { font-size: 1.1rem; margin-bottom: .6rem; }
+.barra-solo { height: 34px; background: #e1e6e2; border: 1px solid #c3cdc5; border-radius: 8px; overflow: hidden; margin: .6rem 0 .8rem; }
+.barra-solo .enchimento { height: 100%; }
+.enchimento.n0 { background: #2e7d32; }
+.enchimento.n1 { background: #f2b200; }
+.enchimento.n2 { background: #c62828; }
+.situacao { display: flex; align-items: center; gap: .6rem; font-size: 1.3rem; font-weight: 700; margin: 0 0 .5rem; }
+.situacao .icone { width: 1.9rem; height: 1.9rem; flex: none; }
+.situacao.s0 { color: #1b4d1f; }
+.situacao.s1 { color: #5c3700; }
+.situacao.s2 { color: #7d1b15; }

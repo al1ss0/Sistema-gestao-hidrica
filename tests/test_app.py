@@ -88,8 +88,9 @@ def test_post_valido_mostra_resultado_completo(cliente):
     html = cliente.post("/analise", data=FORM_OK).get_data(as_text=True)
     assert "Resultado da análise" in html
     assert any(texto in html for texto in config.NOMES_CLASSES.values())
-    for bloco in ["Situação hídrica atual do solo", "Recomendações de manejo", "Indicadores climáticos",
-                  "Dados utilizados", "Déficit hídrico no solo (Dr)", "Água disponível no solo", "Limitações"]:
+    for bloco in ["Situação do solo", "Recomendações de manejo", "Clima da última semana", "Dados utilizados",
+                  "Água no solo", "Irrigar quanto", "Chuva na semana", "Ver detalhes técnicos",
+                  "Ver mais dados do clima", "Limitações"]:
         assert bloco in html
     assert html.count("data:image/png;base64") == 2
     assert "Recomendação de suporte à decisão" in html
