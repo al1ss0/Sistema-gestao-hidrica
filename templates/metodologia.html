@@ -108,11 +108,84 @@
     <ul>
       <li><strong>Divisão por ano de semeadura:</strong> treino {{ anos_treino[0] }}–{{ anos_treino[1] }}, validação {{ anos_validacao|join('–') }}, teste {{ anos_teste|join(', ') }} (nunca aleatória, para evitar vazamento entre dias da mesma safra).</li>
       <li><strong>Modelos comparados:</strong> regressão logística regularizada, Random Forest, XGBoost, MLP e um modelo de base (sempre a classe mais frequente).</li>
-      <li><strong>Seleção:</strong> maior F1-macro na validação; o selecionado foi retreinado em treino + validação e avaliado uma vez no teste.</li>
+      <li><strong>Seleção:</strong> maior F1-macro na validação. O selecionado fica treinado só com os anos de treino e é avaliado uma vez no teste; os anos de validação ficam de fora do ajuste e servem também para calibrar os intervalos de predição (veja abaixo).</li>
     </ul>
     {% if metricas is not none %}
     {{ tabela_metricas(metricas) }}
     <p class="muted" style="margin-top:.6rem">Métricas calculadas na execução do pipeline. Os modelos não selecionados foram avaliados com ajuste só no treino.{% if metadata %} Modelo em uso: <strong>{{ metadata.modelo }}</strong>, treinado em {{ metadata.data[:10] }}.{% endif %}</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="secao" style="padding-top:0" id="incerteza">
+  <div class="container texto">
+    <h2>Quão certo é o resultado? (intervalos de predição)</h2>
+    {% if conformal %}
+    {% set av = conformal.avaliacao_teste %}
+    {% set d = av.distribuicao_tamanhos %}
+    {% set nomes_metodo = {'lac': 'LAC', 'mondrian': 'Mondrian (por classe)', 'aps': 'APS'} %}
+    {% set nomes_classe = {'0': 'Sem necessidade', '1': 'Atenção', '2': 'Irrigação recomendada'} %}
+    <p>Junto com a resposta, o sistema diz se pode haver outra possibilidade. Quando a previsão é um número, o intervalo de
+       predição é uma margem em volta dele. Aqui a resposta é uma classe, então usamos o equivalente para classificação, a
+       <strong>predição conformal</strong>: em vez de uma classe só, o modelo devolve um <em>conjunto</em> de classes possíveis. O conjunto tem
+       uma classe quando o modelo está seguro e duas (ou três) quando está em dúvida.</p>
+
+    <h3>Como funciona, em linguagem simples</h3>
+    <ol>
+      <li>Separamos safras que o modelo <strong>nunca viu</strong> ao aprender ({{ conformal.anos_calibracao[0] }}–{{ conformal.anos_calibracao[-1] }}).</li>
+      <li>Medimos o quanto o modelo erra nelas. Com isso descobrimos até onde é preciso ampliar a resposta para que, em
+          {{ (conformal.nivel * 100)|round|int }} de cada 100 casos, a classe certa esteja dentro do conjunto.</li>
+      <li>Num caso novo, se só uma classe passa nesse critério, a tela mostra <strong>“Resultado confiável”</strong>. Se passa mais de uma, mostra
+          <strong>“Resultado incerto”</strong> e diz qual outra é possível.</li>
+    </ol>
+
+    <h3>O que foi medido nos anos de teste ({{ conformal.anos_teste[0] }}–{{ conformal.anos_teste[-1] }})</h3>
+    <p class="muted">Esses anos não foram usados nem para treinar nem para calibrar.</p>
+    <ul>
+      <li><strong>Cobertura:</strong> em {{ '%.1f'|format(av.cobertura * 100) }}% dos casos a classe certa estava dentro do conjunto. A meta era {{ (conformal.nivel * 100)|round|int }}%.</li>
+      <li><strong>Tamanho do conjunto:</strong> em média {{ '%.2f'|format(av.tamanho_medio) }} classes. Foram {{ '%.1f'|format(d['1'] * 100) }}% dos casos com 1 classe, {{ '%.1f'|format(d['2'] * 100) }}% com 2 e {{ '%.1f'|format(d['3'] * 100) }}% com 3.</li>
+      <li><strong>Por classe:</strong>
+        {% for c, v in av.cobertura_por_classe.items() %}{{ nomes_classe[c] }} {{ '%.1f'|format(v * 100) }}%{{ '; ' if not loop.last }}{% endfor %}.</li>
+    </ul>
+
+    {% if tabela_conformal is not none %}
+    <h3>Os três métodos testados</h3>
+    <div class="tabela"><table class="numerica">
+      <tr><th>Método</th><th>Cobertura</th><th>Tamanho médio</th><th>Com 1 classe</th><th>Cobertura: Sem necessidade</th><th>Cobertura: Atenção</th><th>Cobertura: Irrigação recomendada</th></tr>
+      {% for _, l in tabela_conformal.iterrows() %}
+      <tr class="{{ 'sel' if l['usado'] }}">
+        <td>{{ nomes_metodo[l['metodo']] }}{% if l['usado'] %} (usado){% endif %}</td>
+        <td>{{ '%.1f'|format(l['cobertura_teste'] * 100) }}%</td><td>{{ '%.2f'|format(l['tamanho_medio_teste']) }}</td>
+        <td>{{ '%.1f'|format(l['pct_tamanho_1_teste'] * 100) }}%</td>
+        <td>{{ '%.1f'|format(l['cobertura_classe_0_teste'] * 100) }}%</td><td>{{ '%.1f'|format(l['cobertura_classe_1_teste'] * 100) }}%</td><td>{{ '%.1f'|format(l['cobertura_classe_2_teste'] * 100) }}%</td>
+      </tr>
+      {% endfor %}
+    </table></div>
+    <ul style="margin-top:.8rem">
+      <li><strong>LAC:</strong> o mais simples e o que gera conjuntos menores. Dá a garantia na média de todos os casos, mas não por classe.</li>
+      <li><strong>Mondrian:</strong> calibra cada classe separadamente, para que nenhuma fique mal coberta.</li>
+      <li><strong>APS:</strong> mais cauteloso: cobre mais, mas com conjuntos bem maiores.</li>
+    </ul>
+    <p>{% if conformal.metodo == 'mondrian' %}Foi usado o <strong>Mondrian</strong>. Antes de olhar o teste, vimos na própria calibração que o LAC deixava
+       a classe “Atenção” com cobertura bem abaixo da meta, e o critério automático do sistema, definido antes, troca para o Mondrian nesse caso.
+       {% else %}Foi usado o <strong>{{ nomes_metodo[conformal.metodo] }}</strong>, escolhido por um critério automático definido antes de olhar o teste.{% endif %}
+       O método foi programado diretamente com numpy (algumas dezenas de linhas), sem biblioteca extra.</p>
+    {% endif %}
+
+    <h3>Cuidados ao interpretar</h3>
+    <ul>
+      <li><strong>É uma garantia na média, não caso a caso.</strong> Com {{ (conformal.nivel * 100)|round|int }}%, cerca de {{ 100 - (conformal.nivel * 100)|round|int }} em cada 100 conjuntos podem não conter a classe certa.</li>
+      <li><strong>Só vale para casos parecidos com os da calibração:</strong> o local de treino ({{ local_nome }}) e análises de outubro a maio. Fora disso o resultado principal
+          vem do cálculo FAO-56 e <strong>o intervalo não é mostrado</strong>, porque a garantia não se aplica.</li>
+      {% if metadata and metadata.metricas and metadata.metricas.teste.f1_macro > metadata.metricas.validacao.f1_macro %}
+      <li>A cobertura no teste ficou acima da meta, o que se explica em boa parte por os anos de calibração terem sido um pouco mais difíceis para o modelo do que os de teste (F1-macro {{ '%.3f'|format(metadata.metricas.validacao.f1_macro) }} na calibração e {{ '%.3f'|format(metadata.metricas.teste.f1_macro) }} no teste). É o lado seguro do erro, mas mostra que a cobertura depende do clima dos anos usados.</li>
+      {% endif %}
+      <li>As safras simuladas de um mesmo ano compartilham o mesmo clima, então há menos informação independente do que linhas na tabela ({{ conformal.n_calibracao }} linhas, de apenas {{ conformal.anos_calibracao|length }} anos de clima).</li>
+      <li>Os anos de calibração também foram usados para escolher o modelo entre os quatro candidatos, o que pode deixar a calibração um pouco otimista. Por isso o teste, que nunca foi usado, é a medida que vale.</li>
+      <li>O modelo foi treinado <strong>só com {{ anos_treino[0] }}–{{ anos_treino[1] }}</strong>. Os anos de calibração ficaram de fora do ajuste de propósito: se o modelo os tivesse visto, ele pareceria mais certo do que é e o sistema mostraria “Resultado confiável” sempre.</li>
+    </ul>
+    {% else %}
+    <p class="muted">Este modelo não tem calibração conforme; os intervalos de predição não estão disponíveis.</p>
     {% endif %}
   </div>
 </section>

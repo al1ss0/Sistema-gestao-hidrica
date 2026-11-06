@@ -23,7 +23,9 @@ py -3.14 -m venv .venv
 
 Baixa o clima diário da NASA POWER (de 2010-01-01 até o último dia completo disponível), simula as safras, gera o dataset e treina e compara os modelos. Leva cerca de 3 minutos. Sem internet, use `python pipeline.py --clima-sintetico` (clima gerado artificialmente; o arquivo `data/fonte_clima.txt` registra qual fonte foi usada).
 
-Saídas: `data/clima.csv`, `data/clima_meta.json`, `data/dataset.csv`, `models/modelo.joblib`, `models/metadata.json`, `reports/metricas.csv`, `reports/selecao.txt`.
+Saídas: `data/clima.csv`, `data/clima_meta.json`, `data/dataset.csv`, `models/modelo.joblib`, `models/metadata.json` (inclui a calibração conforme), `reports/metricas.csv`, `reports/conformal.csv`, `reports/selecao.txt`.
+
+`python pipeline.py --so-treino` reaproveita o `data/dataset.csv` existente e só retreina e recalibra (não baixa o clima nem refaz o dataset).
 
 ## Abrir a aplicação
 
@@ -67,15 +69,34 @@ O sistema é uma única aplicação Flask que serve a interface e a API. O repos
 
 ## Resultados da comparação de modelos
 
-Conteúdo de `reports/metricas.csv`, gerado com clima real da NASA POWER. Validação: 2020–2021; teste: 2022–2024. O modelo selecionado (XGBoost) foi retreinado em treino + validação antes de ser avaliado no teste; os demais foram ajustados só no treino.
+Conteúdo de `reports/metricas.csv`, gerado com clima real da NASA POWER. Validação: 2020–2021; teste: 2022–2024. Todos os modelos, inclusive o selecionado (XGBoost), foram ajustados só com os anos de treino (2010–2019): a validação serve para escolher o modelo e calibrar os intervalos de predição, e o teste só para avaliar.
 
 | modelo | f1_macro_validacao | acuracia_balanceada_validacao | recall_classe2_validacao | f1_macro_teste | acuracia_balanceada_teste | recall_classe2_teste | selecionado |
 |---|---|---|---|---|---|---|---|
 | RegressaoLogistica | 0.6976 | 0.7237 | 0.9248 | 0.7412 | 0.7488 | 0.8186 | False |
 | RandomForest | 0.7983 | 0.8042 | 0.9299 | 0.8501 | 0.8493 | 0.9154 | False |
-| XGBoost | 0.8285 | 0.8338 | 0.9467 | 0.8708 | 0.864 | 0.9028 | True |
+| XGBoost | 0.8285 | 0.8338 | 0.9467 | 0.8641 | 0.8584 | 0.9032 | True |
 | MLP | 0.7817 | 0.7962 | 0.9401 | 0.8401 | 0.8324 | 0.8724 | False |
 | Dummy | 0.2211 | 0.3333 | 0.0 | 0.2267 | 0.3333 | 0.0 | False |
+
+## Intervalos de predição (predição conformal)
+
+Para classificação, o equivalente do intervalo de predição é um **conjunto de classes** que contém a classe verdadeira em pelo menos 90% dos casos (`CONFORMAL_ALFA = 0,10` em `config.py`). Na tela principal aparece só uma linha: "✓ Resultado confiável" (conjunto com 1 classe) ou "⚠ Resultado incerto: pode ser também ..." (2 ou 3 classes). O conjunto, o nível de 90% e a cobertura medida no teste ficam em "Ver detalhes técnicos".
+
+- **Método:** predição conformal *split*, com a nota 1 − probabilidade da classe verdadeira, programada à mão com numpy (módulo `hidrica/conformal.py`; sem MAPIE, para não somar dependências). O conjunto nunca fica vazio: sempre inclui a classe mais provável.
+- **Calibração:** nos anos de validação (2020–2021). Por isso **o modelo final é ajustado só com 2010–2019**: se ele tivesse visto os anos de calibração, pareceria mais certo do que é e todos os conjuntos teriam 1 classe. O limiar calibrado fica em `models/metadata.json`, no campo `conformal`, e o site não recalcula nada.
+- **Escolha do método:** o modo `auto` usa o LAC global, mas troca para **Mondrian** (um limiar por classe) se, na própria calibração, alguma classe ficar abaixo de 85% de cobertura. A decisão é tomada sem olhar o teste. Aqui foi escolhido o método **mondrian**.
+- **Fora do domínio de treino** (localidade a mais de 50 km de Passo Fundo ou análise de junho a setembro) o resultado vem do cálculo FAO-56 e **o intervalo não é mostrado**: a garantia de cobertura só vale para casos parecidos com os da calibração.
+
+Medido no teste (2022–2024, nunca usado para treinar nem calibrar), conteúdo de `reports/conformal.csv`:
+
+| método | cobertura no teste | tamanho médio | 1 classe | 2 classes | 3 classes | cobertura: sem necessidade | cobertura: atenção | cobertura: irrigação recomendada |
+|---|---|---|---|---|---|---|---|---|
+| lac | 93.1% | 1.09 | 91.0% | 8.9% | 0.0% | 97.9% | 80.1% | 93.7% |
+| **mondrian (usado)** | 93.5% | 1.14 | 86.4% | 13.6% | 0.0% | 95.8% | 91.9% | 90.3% |
+| aps | 98.9% | 1.53 | 46.9% | 53.1% | 0.0% | 99.5% | 99.0% | 97.8% |
+
+O método usado cobriu **93.5%** dos casos (meta 90%), com conjuntos de **1.14** classes em média. A cobertura por classe fica em 95.8% (sem necessidade), 91.9% (atenção) e 90.3% (irrigação recomendada). A cobertura global ficou acima da meta, o que se explica em boa parte por os anos de calibração terem sido mais difíceis para o modelo do que os de teste (F1-macro menor na calibração); é o lado seguro do erro, mas mostra que a cobertura depende do clima dos anos usados.
 
 ## Limitações
 

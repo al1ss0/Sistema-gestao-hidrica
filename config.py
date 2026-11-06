@@ -56,6 +56,13 @@ ANOS_TREINO = range(2010, 2020)
 ANOS_VALIDACAO = (2020, 2021)
 ANOS_TESTE = (2022, 2023, 2024)
 
+# Predição conformal (hidrica/conformal.py). A calibração usa ANOS_VALIDACAO, que por isso NÃO
+# podem ser usados para ajustar o modelo final (ver treinar_e_avaliar).
+CONFORMAL_ALFA = 0.10                  # nível de confiança de 90%: o conjunto contém a classe verdadeira em ~90% dos casos
+CONFORMAL_METODO = "auto"              # "auto" | "lac" | "mondrian" | "aps"
+# No modo "auto", usa-se Mondrian (garantia por classe) se, na calibração, alguma classe ficar abaixo disto com o LAC global.
+CONFORMAL_COBERTURA_MINIMA_CLASSE = 0.85
+
 RAIZ = Path(__file__).parent
 DATA_DIR = RAIZ / "data"
 MODELS_DIR = RAIZ / "models"

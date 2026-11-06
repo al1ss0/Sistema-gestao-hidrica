@@ -134,6 +134,10 @@ def create_app(pasta=config.RAIZ, clima=None, atualizar=None, hoje=None, limite_
     arquivo_metricas = pasta / "reports" / "metricas.csv"
     if arquivo_metricas.exists():
         metricas = pd.read_csv(arquivo_metricas)
+    tabela_conformal = None
+    arquivo_conformal = pasta / "reports" / "conformal.csv"
+    if arquivo_conformal.exists():
+        tabela_conformal = pd.read_csv(arquivo_conformal)
 
     def ultima_data_referencia():
         """Último dia completo de clima do local de referência (arquivo salvo ou consulta à fonte)."""
@@ -279,6 +283,7 @@ def create_app(pasta=config.RAIZ, clima=None, atualizar=None, hoje=None, limite_
     def metodologia():
         return render_template(
             "metodologia.html", pagina="metodologia", metricas=metricas, metadata=metadata,
+            conformal=metadata.get("conformal") if metadata else None, tabela_conformal=tabela_conformal,
             culturas={n: {**c, "ciclo": agro.duracao_ciclo(n)} for n, c in config.CULTURAS.items()},
             solos=config.SOLOS, alpha=config.ALPHA, nomes_classes=config.NOMES_CLASSES,
             anos_treino=(min(config.ANOS_TREINO), max(config.ANOS_TREINO)),

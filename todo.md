@@ -121,8 +121,9 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
     3. Ajusta o Dummy.
     4. Calcula, na validação, o F1-macro, a acurácia balanceada e o recall da classe 2 de cada modelo.
     5. Escolhe o vencedor pela regra da seção 8.
-    6. Retreina o vencedor (com os mesmos hiperparâmetros) em treino + validação e avalia no teste. Os outros modelos também são avaliados no teste, só para a tabela.
-    7. Salva `reports/metricas.csv`, `reports/selecao.txt`, `models/modelo.joblib` e `models/metadata.json` dentro de `pasta_saida`.
+    6. Usa como modelo final o vencedor ajustado **só no treino**, sem retreinar com a validação, porque os anos de validação calibram a predição conformal (`hidrica/conformal.py`). Avalia no teste todos os modelos (os outros só para a tabela).
+    7. Calibra a predição conformal na validação e avalia a cobertura no teste.
+    8. Salva `reports/metricas.csv`, `reports/selecao.txt`, `reports/conformal.csv`, `models/modelo.joblib` e `models/metadata.json` dentro de `pasta_saida`.
 
     Com `rapido=True`, usa 3.000 linhas amostradas do treino (seed 42) e só o primeiro valor de cada grade (para os testes). A amostra deve ser estratificada por `classe` (por exemplo, com `train_test_split(..., train_size=3000, stratify=treino["classe"], random_state=42)`), porque o XGBoost falha se faltar alguma das classes 0, 1 ou 2.
   - `carregar_modelo(pasta=config.RAIZ) -> (pipeline, metadata)`.

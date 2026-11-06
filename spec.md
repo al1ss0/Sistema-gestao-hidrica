@@ -208,14 +208,29 @@ O total é de 3 × 3 × 5 × 2 × 15 = 1.350 cenários. Cada cenário vai do dia
 
 A regressão logística é o modelo linear de referência; o MLP e a regressão logística dependem do `StandardScaler` do pipeline.
 
-**Seleção:** vence o maior F1-macro na validação. Em empate (diferença < 0,01), a preferência é pelo modelo mais simples: RegressaoLogistica, depois RandomForest, depois XGBoost, depois MLP. O vencedor é retreinado em treino + validação e avaliado **uma única vez** no teste.
+**Seleção:** vence o maior F1-macro na validação. Em empate (diferença < 0,01), a preferência é pelo modelo mais simples: RegressaoLogistica, depois RandomForest, depois XGBoost, depois MLP. O vencedor fica **ajustado só no treino** (2010–2019) e é avaliado **uma única vez** no teste. Os anos de validação não entram no ajuste porque calibram os intervalos de predição (seção 8.1).
 
 **Saídas:**
 
 - `reports/metricas.csv`: para cada modelo, F1-macro na validação e no teste, acurácia balanceada e recall da classe 2.
 - `reports/selecao.txt`
 - `models/modelo.joblib`
-- `models/metadata.json`: nome, hiperparâmetros, lista de features, métricas e data.
+- `reports/conformal.csv`: comparação dos métodos conformes (LAC, Mondrian, APS) no teste.
+- `models/metadata.json`: nome, hiperparâmetros, lista de features, métricas, data, anos de ajuste do modelo e a calibração conforme (`conformal`: método, nível, limiar q̂, anos e medidas no teste).
+
+## 8.1 Intervalos de predição (predição conformal)
+
+Camada extra sobre o modelo, sem alterar o modelo nem as regras do FAO-56.
+
+- **O que é:** para classificação, o equivalente do intervalo de predição é um conjunto de classes que contém a classe verdadeira em pelo menos 1 − α dos casos. α = `config.CONFORMAL_ALFA` (padrão 0,10, ou seja, 90%).
+- **Método:** *split conformal* com a nota de não conformidade 1 − p(classe verdadeira) (LAC), implementado à mão com numpy em `hidrica/conformal.py`. Justificativa: o algoritmo tem poucas linhas, evita uma dependência nova (o MAPIE traria risco de compatibilidade com Python 3.14 e sklearn 1.9 e aumentaria a imagem de produção) e é testável. O limiar é a k-ésima menor nota, com k = ⌈(n+1)(1−α)⌉.
+- **Variantes avaliadas:** LAC global, **Mondrian** (um limiar por classe, garantia por classe) e APS sem aleatorização (conjuntos mais conservadores). `CONFORMAL_METODO = "auto"` usa o LAC e troca para Mondrian se, na calibração, alguma classe ficar abaixo de `CONFORMAL_COBERTURA_MINIMA_CLASSE` (0,85); a regra usa só dados de calibração.
+- **Calibração:** anos de validação (`ANOS_VALIDACAO`, 2020–2021). **Condição:** o modelo não pode ter visto esses anos. Antes desta camada o modelo final era retreinado com treino + validação, o que faria o limiar ficar baixo demais (acurácia de 97,9% na calibração contra 89,8% no teste, e todos os conjuntos com 1 classe). Por isso o modelo final passou a ser ajustado só com 2010–2019. A validação ainda escolhe o algoritmo entre os quatro candidatos, o que pode deixar a calibração levemente otimista; o teste, nunca usado, é a medida que vale.
+- **Conjunto nunca vazio:** sempre inclui a classe mais provável, o que só aumenta a cobertura.
+- **Armazenamento:** o limiar calibrado e as medidas do teste ficam em `models/metadata.json` (campo `conformal`); o site não recalcula nada.
+- **Resultado medido no teste (2022–2024):** método **mondrian**, cobertura **93.5%** (meta 90%), tamanho médio **1.14**; conjuntos com 1, 2 e 3 classes: 86.4%, 13.6%, 0.0%. Cobertura por classe: 95.8% / 91.9% / 90.3%.
+- **Na interface:** uma linha simples abaixo do resultado ("✓ Resultado confiável" para 1 classe; "⚠ Resultado incerto: pode ser também ... Observe a lavoura antes de decidir." para 2 ou 3) e os detalhes (conjunto, nível, cobertura medida) em "Ver detalhes técnicos". **Fora do domínio de treino** (RN04: localidade distante ou meses de junho a setembro) o resultado vem do FAO-56 e o intervalo não é mostrado, porque a garantia de cobertura não vale fora da distribuição de calibração.
+- **Limites:** garantia na média, não caso a caso; as safras de um mesmo ano compartilham o clima, então há menos informação independente do que linhas; a cobertura depende do clima dos anos de calibração.
 
 ## 9. Interface (Flask)
 

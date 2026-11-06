@@ -5,7 +5,6 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -18,7 +17,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
 
 import config
-from hidrica import dataset
+from hidrica import conformal, dataset
 
 # Ordem de preferência no desempate: do modelo mais simples ao mais complexo.
 MODELOS = {
@@ -99,13 +98,28 @@ def treinar_e_avaliar(df, pasta_saida=config.RAIZ, rapido=False):
         nome for nome in MODELOS if val[nome]["f1_macro"] >= melhor_f1 - TOLERANCIA_EMPATE
     )
 
-    final = clone(ajustados[vencedor])
-    treino_val = pd.concat([treino, validacao])
-    final.fit(treino_val[dataset.FEATURES], treino_val["classe"])
+    # O modelo final é o vencedor ajustado SÓ no treino. Os anos de validação não entram no ajuste:
+    # eles servem para escolher o modelo e para calibrar os conjuntos conformes (hidrica/conformal.py),
+    # e a calibração só é válida se o modelo nunca viu esses dados.
+    final = ajustados[vencedor]
 
     tst = {nome: _metricas(p, teste) for nome, p in ajustados.items()}
     tst["Dummy"] = _metricas(dummy, teste)
-    tst[vencedor] = _metricas(final, teste)
+
+    classes = list(final.classes_)
+    proba_cal = final.predict_proba(validacao[dataset.FEATURES])
+    proba_teste = final.predict_proba(teste[dataset.FEATURES])
+    comparacao = conformal.comparar(
+        proba_cal, validacao["classe"], proba_teste, teste["classe"], classes, config.CONFORMAL_ALFA
+    )
+    metodo = config.CONFORMAL_METODO
+    if metodo == "auto":
+        metodo = conformal.escolher_metodo(proba_cal, validacao["classe"], classes, config.CONFORMAL_ALFA)
+    spec_conformal = conformal.calibrar(proba_cal, validacao["classe"], classes, config.CONFORMAL_ALFA, metodo)
+    spec_conformal["anos_calibracao"] = sorted(int(a) for a in validacao["ano"].unique())
+    spec_conformal["anos_teste"] = sorted(int(a) for a in teste["ano"].unique())
+    spec_conformal["avaliacao_teste"] = conformal.avaliar(proba_teste, teste["classe"], spec_conformal)
+    comparacao["usado"] = comparacao["metodo"] == metodo
 
     linhas = []
     for nome in list(MODELOS) + ["Dummy"]:
@@ -120,13 +134,18 @@ def treinar_e_avaliar(df, pasta_saida=config.RAIZ, rapido=False):
     (pasta_saida / "reports").mkdir(parents=True, exist_ok=True)
     (pasta_saida / "models").mkdir(parents=True, exist_ok=True)
     metricas.round(4).to_csv(pasta_saida / "reports" / "metricas.csv", index=False)
+    comparacao.round(4).to_csv(pasta_saida / "reports" / "conformal.csv", index=False)
+    av = spec_conformal["avaliacao_teste"]
     texto = (
         f"Modelo selecionado: {vencedor}\n"
         f"F1-macro na validação: {val[vencedor]['f1_macro']:.4f}\n"
         f"Critério: maior F1-macro na validação; empate (diferença < {TOLERANCIA_EMPATE}) "
         "resolvido pelo modelo mais simples.\n"
-        "Métricas de teste do modelo selecionado: retreinado em treino + validação e avaliado uma vez.\n"
-        "Métricas de teste dos demais modelos: ajustados só no treino (apenas para a tabela).\n"
+        "Todos os modelos, inclusive o selecionado, foram ajustados só no treino; as métricas de teste "
+        "são de modelos que nunca viram a validação nem o teste.\n"
+        f"Predição conformal: método {spec_conformal['metodo']}, nível {spec_conformal['nivel']:.0%}, "
+        f"calibrada nos anos {spec_conformal['anos_calibracao']}. No teste: cobertura {av['cobertura']:.4f}, "
+        f"tamanho médio do conjunto {av['tamanho_medio']:.3f}.\n"
         "Limitação: os rótulos vêm do balanço hídrico FAO-56; as métricas medem concordância "
         "com a simulação, não validade agronômica.\n"
     )
@@ -138,12 +157,14 @@ def treinar_e_avaliar(df, pasta_saida=config.RAIZ, rapido=False):
         "hiperparametros": melhores_params[vencedor],
         "features": dataset.FEATURES,
         "metricas": {"validacao": val[vencedor], "teste": tst[vencedor]},
+        "anos_ajuste_do_modelo": sorted(int(a) for a in treino["ano"].unique()),
+        "conformal": spec_conformal,
         "data": datetime.now().isoformat(timespec="seconds"),
     }
     (pasta_saida / "models" / "metadata.json").write_text(
         json.dumps(metadata, indent=2, default=_json_seguro, ensure_ascii=False), encoding="utf-8"
     )
-    return {"metricas": metricas, "vencedor": vencedor, "metadata": metadata}
+    return {"metricas": metricas, "vencedor": vencedor, "metadata": metadata, "conformal": comparacao}
 
 
 def carregar_modelo(pasta=config.RAIZ):

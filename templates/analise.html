@@ -205,6 +205,14 @@
         </div>
       </div>
 
+      {% if res.intervalo.disponivel %}
+        {% if res.intervalo.confiavel %}
+        <p class="confianca c-ok" role="status"><span class="simbolo" aria-hidden="true">✓</span> Resultado confiável</p>
+        {% else %}
+        <p class="confianca c-incerto" role="status"><span class="simbolo" aria-hidden="true">⚠</span> Resultado incerto: pode ser também {% for nome in res.intervalo.outras %}“{{ nome }}”{{ ' ou ' if not loop.last }}{% endfor %}. Observe a lavoura antes de decidir.</p>
+        {% endif %}
+      {% endif %}
+
       {% if res.divergente and not res.fora_do_dominio %}
         <div class="alerta-divergencia" role="alert">
           <strong>Atenção:</strong> o modelo e o cálculo de referência divergem. O cálculo de referência (balanço
@@ -256,6 +264,17 @@
             {% if res.lamina is not none %}<dt>Lâmina líquida de reposição</dt><dd>{{ res.lamina }} mm</dd>{% endif %}
             <dt>Coeficiente da cultura (Kc)</dt><dd>{{ res.kc }}</dd>
             <dt>Estágio da cultura</dt><dd>{{ res.estagio }}</dd>
+            {% set iv = res.intervalo %}
+            {% set metodos = {'lac': 'LAC (nota 1 − probabilidade da classe verdadeira)', 'mondrian': 'Mondrian (calibrado separadamente por classe)', 'aps': 'APS (probabilidades acumuladas)'} %}
+            {% if iv.disponivel %}
+            <dt>Conjunto de predição</dt><dd>{{ iv.textos_conjunto|join(' · ') }}</dd>
+            <dt>Nível de confiança</dt><dd>{{ iv.nivel_pct }}% (predição conformal, método {{ metodos[iv.metodo] }})</dd>
+            <dt>Cobertura medida no teste ({{ iv.anos_teste[0] }}–{{ iv.anos_teste[-1] }})</dt><dd>{{ iv.cobertura_teste_pct }}% dos casos tiveram a classe verdadeira dentro do conjunto; tamanho médio do conjunto: {{ iv.tamanho_medio_teste }}</dd>
+            {% elif iv.motivo == 'fora_do_dominio' %}
+            <dt>Intervalo de predição</dt><dd>Não mostrado. Esta consulta está fora do domínio em que o modelo foi treinado e calibrado ({{ iv.motivos|join('; ') }}), então o resultado vem do cálculo FAO-56, não do modelo. A garantia de cobertura de {{ iv.nivel_pct }}% só vale para casos parecidos com os da calibração.</dd>
+            {% else %}
+            <dt>Intervalo de predição</dt><dd>Não disponível: este modelo não tem calibração conforme.</dd>
+            {% endif %}
           </dl>
         </details>
       </div>

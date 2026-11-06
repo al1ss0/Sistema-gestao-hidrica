@@ -37,7 +37,7 @@ git push -u origin main
 
 3. Abra a aba **Actions** do repositório e confirme que o workflow **CI** ficou verde.
 
-Antes do primeiro `push`, confira que `git status` lista `models/modelo.joblib`, `models/metadata.json` e `reports/metricas.csv` (são os arquivos que a hospedagem usa).
+Antes do primeiro `push`, confira que `git status` lista `models/modelo.joblib`, `models/metadata.json`, `reports/metricas.csv` e `reports/conformal.csv` (são os arquivos que a hospedagem usa).
 
 ## Passo 2: colocar no ar no Render
 
@@ -94,7 +94,7 @@ O limite por IP e o cache existem para que um uso excessivo, ou um abuso, não e
 
 1. Localmente: `python pipeline.py` (retreina com o clima mais recente).
 2. Confira `reports/metricas.csv` e `reports/selecao.txt`.
-3. Faça commit de `models/modelo.joblib`, `models/metadata.json` e `reports/metricas.csv` e dê `push`: a hospedagem faz o deploy sozinha.
+3. Faça commit de `models/modelo.joblib`, `models/metadata.json` (traz o limiar conforme), `reports/metricas.csv` e `reports/conformal.csv` e dê `push`: a hospedagem faz o deploy sozinha.
 
 O modelo só precisa ser retreinado para mudar o que ele sabe (novas safras, outras regiões). O clima das análises é sempre buscado na hora.
 

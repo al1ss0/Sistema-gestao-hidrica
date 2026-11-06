@@ -11,7 +11,7 @@ import pandas as pd  # noqa: E402
 from matplotlib.figure import Figure  # noqa: E402  (sem pyplot: seguro com várias requisições simultâneas)
 
 import config  # noqa: E402
-from hidrica import agro, dataset, localidade  # noqa: E402
+from hidrica import agro, conformal, dataset, localidade  # noqa: E402
 
 # Cores dos gráficos (paleta categórica validada: slots 1 a 3) e tintas neutras.
 COR_CHUVA = "#2a78d6"
@@ -226,6 +226,38 @@ def _recomendacoes(classe, dr, raw, alerta, lamina, chuva_7d, etc_7d, divergente
     return itens
 
 
+def _intervalo(proba, classes, metadata, classe_modelo, motivos):
+    """Conjunto de predição conformal para exibir, ou o motivo de não exibi-lo.
+
+    Só vale dentro do domínio de calibração (mesmo local e meses do treino). Fora dele o resultado
+    principal vem do cálculo FAO-56, e a garantia de cobertura não se aplica: nada é mostrado.
+    """
+    spec = metadata.get("conformal")
+    if not spec:
+        return {"disponivel": False, "motivo": "sem_calibracao"}
+    teste = spec["avaliacao_teste"]
+    base = {
+        "metodo": spec["metodo"],
+        "nivel_pct": round(spec["nivel"] * 100),
+        "anos_calibracao": spec["anos_calibracao"],
+        "anos_teste": spec["anos_teste"],
+        "cobertura_teste_pct": round(teste["cobertura"] * 100, 1),
+        "tamanho_medio_teste": round(teste["tamanho_medio"], 2),
+    }
+    if motivos:
+        return {**base, "disponivel": False, "motivo": "fora_do_dominio", "motivos": motivos}
+    mascara = conformal.conjunto_de_predicao(proba, spec)[0]
+    conjunto = [int(c) for c, dentro in zip(classes, mascara) if dentro]
+    outras = [c for c in conjunto if c != classe_modelo]
+    return {
+        **base, "disponivel": True, "motivo": None,
+        "conjunto": conjunto,
+        "textos_conjunto": [config.NOMES_CLASSES[c] for c in conjunto],
+        "confiavel": not outras,
+        "outras": [config.NOMES_CLASSES[c] for c in outras],
+    }
+
+
 def recomendar(entrada, clima, modelo, metadata, local=None):
     """Análise de uma propriedade. `local` é a localidade escolhida (padrão: o local de referência).
 
@@ -271,6 +303,7 @@ def recomendar(entrada, clima, modelo, metadata, local=None):
         "origem_principal": origem,
         "fora_do_dominio": fora_do_dominio,
         "motivos_extrapolacao": motivos,
+        "intervalo": _intervalo(proba, classes, metadata, classe_modelo, motivos),
         "local": {
             "nome": local.nome, "lat": local.lat, "lon": local.lon, "alt": local.alt,
             "fonte_alt": local.fonte_alt, "tipo": local.tipo,

@@ -187,3 +187,9 @@ label.radio input { width: 1.1rem; height: 1.1rem; accent-color: var(--verde-700
 .situacao.s0 { color: #1b4d1f; }
 .situacao.s1 { color: #5c3700; }
 .situacao.s2 { color: #7d1b15; }
+
+/* Linha de confiança do resultado (predição conformal, em linguagem simples) */
+.confianca { display: flex; gap: .6rem; align-items: baseline; margin: .8rem 0 0; padding: .7rem 1rem; border-radius: var(--raio); font-size: 1.2rem; font-weight: 700; border: 1px solid; }
+.confianca .simbolo { font-size: 1.4rem; line-height: 1; }
+.confianca.c-ok { background: var(--ok-fundo); border-color: #a5d6a7; color: #1b4d1f; }
+.confianca.c-incerto { background: var(--atencao-fundo); border-color: var(--atencao-borda); color: #5c3700; }

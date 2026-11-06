@@ -1,6 +1,6 @@
 modelo,f1_macro_validacao,acuracia_balanceada_validacao,recall_classe2_validacao,f1_macro_teste,acuracia_balanceada_teste,recall_classe2_teste,selecionado
 RegressaoLogistica,0.6976,0.7237,0.9248,0.7412,0.7488,0.8186,False
 RandomForest,0.7983,0.8042,0.9299,0.8501,0.8493,0.9154,False
-XGBoost,0.8285,0.8338,0.9467,0.8708,0.864,0.9028,True
+XGBoost,0.8285,0.8338,0.9467,0.8641,0.8584,0.9032,True
 MLP,0.7817,0.7962,0.9401,0.8401,0.8324,0.8724,False
 Dummy,0.2211,0.3333,0.0,0.2267,0.3333,0.0,False
