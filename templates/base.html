@@ -6,14 +6,14 @@
 <title>{% block titulo %}HidroDecisão{% endblock %} · Gestão hídrica em propriedades rurais</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="pg-{{ pagina or 'outra' }}">
 <header class="topo">
   <div class="container">
     <a class="marca" href="{{ url_for('inicio') }}">
-      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <span class="marca-icone"><svg width="24" height="24" viewBox="0 0 34 34" aria-hidden="true">
         <path d="M17 3C12 10 7 14.5 7 20a10 10 0 0 0 20 0C27 14.5 22 10 17 3Z" fill="#66d28a"/>
-        <path d="M17 30c-2-6 0-10 5-14" stroke="#0f3b27" stroke-width="2" fill="none" stroke-linecap="round"/>
-      </svg>
+        <path d="M17 30c-2-6 0-10 5-14" stroke="#0f3b27" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      </svg></span>
       <span>HidroDecisão<small>Gestão hídrica em propriedades rurais</small></span>
     </a>
     <nav class="menu" aria-label="Navegação principal">
@@ -22,6 +22,8 @@
       <a href="{{ url_for('metodologia') }}" {% if pagina == 'metodologia' %}aria-current="page"{% endif %}>Metodologia</a>
       <a href="{{ url_for('sobre') }}" {% if pagina == 'sobre' %}aria-current="page"{% endif %}>Sobre o projeto</a>
     </nav>
+    <a class="btn-pilula" href="{{ url_for('analise') }}#plataforma">Analisar minha lavoura
+      <span class="seta" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
   </div>
 </header>
 

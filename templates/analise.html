@@ -14,15 +14,13 @@
 {# Arredonda meio para cima (12,5 vira 13), como se espera ao ler um número na tela. #}
 {% macro arred(x) %}{{ ((x + 0.5)|round(0, 'floor'))|int }}{% endmacro %}
 {% block conteudo %}
-<section class="plataforma-cab">
+<section class="capa-pagina" style="--foto: url('{{ url_for('static', filename='img/fotos/pivo-lavoura.jpg') }}')">
   <div class="container">
-    <span class="selo" style="background:#fff;border-color:var(--borda);color:var(--verde-700)">Plataforma de análise hídrica</span>
-    <h1 style="font-size:1.8rem">Analise a necessidade de irrigação da sua lavoura</h1>
-    <p class="muted" style="max-width:68ch;margin:0">
-      Preencha os dados abaixo. Campos com <span class="req" style="font-weight:700"></span> são obrigatórios.
+    <span class="sobretitulo">Plataforma de análise hídrica</span>
+    <h1>Analise a necessidade de irrigação da sua lavoura</h1>
+    <p>Preencha os dados abaixo. Campos com <span class="req" style="font-weight:700"></span> são obrigatórios.
       Para o local de referência o clima vai até {{ data_max[8:10] }}/{{ data_max[5:7] }}/{{ data_max[:4] }}; em outras
-      localidades a fonte costuma ter alguns dias de defasagem.
-    </p>
+      localidades a fonte costuma ter alguns dias de defasagem.</p>
   </div>
 </section>
 
@@ -43,19 +41,6 @@
       </div>
     {% endif %}
 
-    {% if presets %}
-    <details style="margin:0 0 1rem">
-      <summary>Preencher com um exemplo</summary>
-      <div class="grade" style="margin-top:.7rem">
-        {% for p in presets %}
-        <a class="cartao exemplo" href="{{ url_for('analise', **p.consulta) }}#plataforma">
-          <strong>{{ p.titulo }}</strong>
-          <p class="rotulo" style="margin:0">{{ p.rotulo }} · {{ p.local_rotulo }}</p>
-        </a>
-        {% endfor %}
-      </div>
-    </details>
-    {% endif %}
 
     <form method="post" action="{{ url_for('analise') }}#resultado" id="form-analise" novalidate>
       <fieldset class="secao-form" id="grupo-local">
@@ -63,7 +48,7 @@
         <p class="dica" style="margin:0 0 .7rem">Escolha o local da propriedade que será analisada, onde quer que ela fique. O sistema não usa a localização de quem está acessando.</p>
         {% set modo = form.get('local_modo') or 'referencia' %}
         <div class="opcoes-local" role="radiogroup" aria-label="Como informar a localização">
-          <label class="radio"><input type="radio" name="local_modo" value="referencia" {{ 'checked' if modo == 'referencia' }}> Local de referência: {{ local_nome }}</label>
+          <label class="radio"><input type="radio" name="local_modo" value="referencia" {{ 'checked' if modo == 'referencia' }}> {{ local_nome }}</label>
           <label class="radio"><input type="radio" name="local_modo" value="municipio" {{ 'checked' if modo == 'municipio' }}> Município</label>
           <label class="radio"><input type="radio" name="local_modo" value="coordenadas" {{ 'checked' if modo == 'coordenadas' }}> Coordenadas</label>
         </div>
@@ -166,7 +151,6 @@
 
       <div class="barra-form">
         <button class="btn btn-verde" type="submit" {{ 'disabled' if aviso_modelo }}>Analisar necessidade de irrigação</button>
-        <a class="btn btn-neutro" href="{{ url_for('analise') }}#plataforma">Limpar</a>
         {% if status_clima %}
         <span class="muted" style="font-size:.85rem">
           Clima até {{ status_clima.ultima_data }}.
@@ -254,26 +238,24 @@
         <p class="situacao s{{ nivel }}">{{ icone(nivel) }}<span>{{ rotulos[nivel] }}</span></p>
         <details>
           <summary>Ver detalhes técnicos</summary>
-          <dl class="lista-dados">
-            <dt>Déficit hídrico (Dr)</dt><dd>{{ res.dr }} mm</dd>
-            <dt>Limite de alerta</dt><dd>{{ res.alerta }} mm</dd>
-            <dt>Limite de estresse (RAW)</dt><dd>{{ res.raw }} mm</dd>
-            <dt>Água disponível total (TAW)</dt><dd>{{ res.taw }} mm</dd>
-            <dt>Água disponível no solo</dt><dd>{{ res.agua_disponivel }} mm</dd>
-            <dt>Água disponível já consumida</dt><dd>{{ res.pct_esgotada }} %</dd>
-            {% if res.lamina is not none %}<dt>Lâmina líquida de reposição</dt><dd>{{ res.lamina }} mm</dd>{% endif %}
-            <dt>Coeficiente da cultura (Kc)</dt><dd>{{ res.kc }}</dd>
-            <dt>Estágio da cultura</dt><dd>{{ res.estagio }}</dd>
+          <dl class="lista-tecnica">
+            <div><dt>Déficit (Dr)</dt><dd>{{ res.dr }} mm</dd></div>
+            <div><dt>Limite de alerta</dt><dd>{{ res.alerta }} mm</dd></div>
+            <div><dt>Limite de estresse (RAW)</dt><dd>{{ res.raw }} mm</dd></div>
+            <div><dt>Água total do solo (TAW)</dt><dd>{{ res.taw }} mm</dd></div>
+            <div><dt>Água no solo</dt><dd>{{ res.agua_disponivel }} mm</dd></div>
+            <div><dt>Já consumida</dt><dd>{{ res.pct_esgotada }} %</dd></div>
+            {% if res.lamina is not none %}<div><dt>Lâmina de reposição</dt><dd>{{ res.lamina }} mm</dd></div>{% endif %}
+            <div><dt>Kc · estágio</dt><dd>{{ res.kc }} · {{ res.estagio }}</dd></div>
             {% set iv = res.intervalo %}
-            {% set metodos = {'lac': 'LAC (nota 1 − probabilidade da classe verdadeira)', 'mondrian': 'Mondrian (calibrado separadamente por classe)', 'aps': 'APS (probabilidades acumuladas)'} %}
             {% if iv.disponivel %}
-            <dt>Conjunto de predição</dt><dd>{{ iv.textos_conjunto|join(' · ') }}</dd>
-            <dt>Nível de confiança</dt><dd>{{ iv.nivel_pct }}% (predição conformal, método {{ metodos[iv.metodo] }})</dd>
-            <dt>Cobertura medida no teste ({{ iv.anos_teste[0] }}–{{ iv.anos_teste[-1] }})</dt><dd>{{ iv.cobertura_teste_pct }}% dos casos tiveram a classe verdadeira dentro do conjunto; tamanho médio do conjunto: {{ iv.tamanho_medio_teste }}</dd>
+            <div class="largo"><dt>Conjunto de predição</dt><dd>{{ iv.textos_conjunto|join(' · ') }}</dd></div>
+            <div><dt>Nível de confiança</dt><dd>{{ iv.nivel_pct }}% · {{ {'lac': 'LAC', 'mondrian': 'Mondrian', 'aps': 'APS'}[iv.metodo] }}</dd></div>
+            <div><dt>Cobertura medida no teste ({{ iv.anos_teste[0] }}–{{ iv.anos_teste[-1] }})</dt><dd>{{ iv.cobertura_teste_pct }}% · tamanho médio do conjunto: {{ iv.tamanho_medio_teste }}</dd></div>
             {% elif iv.motivo == 'fora_do_dominio' %}
-            <dt>Intervalo de predição</dt><dd>Não mostrado. Esta consulta está fora do domínio em que o modelo foi treinado e calibrado ({{ iv.motivos|join('; ') }}), então o resultado vem do cálculo FAO-56, não do modelo. A garantia de cobertura de {{ iv.nivel_pct }}% só vale para casos parecidos com os da calibração.</dd>
+            <div class="largo"><dt>Intervalo de predição</dt><dd>Não mostrado: consulta fora do domínio do modelo ({{ iv.motivos|join('; ') }}). O resultado vem do cálculo FAO-56, e a garantia de cobertura de {{ iv.nivel_pct }}% não se aplica.</dd></div>
             {% else %}
-            <dt>Intervalo de predição</dt><dd>Não disponível: este modelo não tem calibração conforme.</dd>
+            <div class="largo"><dt>Intervalo de predição</dt><dd>Não disponível: este modelo não tem calibração conforme.</dd></div>
             {% endif %}
           </dl>
         </details>
@@ -363,29 +345,6 @@
         </details>
       </div>
 
-      <div class="painel">
-        <h3>Dados utilizados</h3>
-        <dl class="lista-dados">
-          <dt>Localização</dt><dd>{{ res.local.nome }}{% if res.local.tipo == 'municipio' %} (sede do município){% endif %}</dd>
-          <dt>Coordenadas e altitude</dt><dd>{{ '%.4f'|format(res.local.lat) }}, {{ '%.4f'|format(res.local.lon) }}
-            · {% if res.local.alt is not none %}{{ res.local.alt|round|int }} m ({{ res.local.fonte_alt }}){% else %}altitude não informada{% endif %}</dd>
-          <dt>Distância do local de treino</dt><dd>{{ res.local.distancia_km }} km</dd>
-          <dt>Cultura / solo</dt><dd>{{ res.entrada.cultura|capitalize }} / {{ res.entrada.solo }}</dd>
-          <dt>Semeadura / análise</dt><dd>{{ res.entrada.semeadura }} / {{ res.entrada.analise }}</dd>
-          <dt>Última irrigação</dt><dd>{% if res.entrada.irrigacao_data %}{{ res.entrada.irrigacao_data }}, {{ res.entrada.lamina }} mm{% else %}não informada{% endif %}</dd>
-          <dt>Período climático</dt><dd>{{ res.entrada.semeadura }} a {{ res.entrada.analise }}</dd>
-          {% if res.local.tipo != 'referencia' or not status_clima %}
-          <dt>Fonte do clima</dt><dd>NASA POWER (série diária, grade de cerca de 50 km), consultada para esta localidade</dd>
-          <dt>Tipo do dado</dt><dd>Estimativa de reanálise/modelagem e satélite — não é medição de estação meteorológica</dd>
-          {% else %}
-          <dt>Fonte do clima</dt><dd>{{ status_clima.fonte_nome }}</dd>
-          <dt>Tipo do dado</dt><dd>{{ status_clima.tipo_dado }}</dd>
-          <dt>Último dia disponível</dt><dd>{{ status_clima.ultima_data }}{% if status_clima.atualizado_em %} (base atualizada em {{ status_clima.atualizado_em }}){% endif %}</dd>
-          {% endif %}
-          <dt>Modelo</dt><dd>{{ modelo_nome }}</dd>
-        </dl>
-      </div>
-
       <div class="limites">
         <strong>Limitações:</strong> {{ res.aviso }} A estimativa usa parâmetros de referência do FAO-56 e clima de um
         ponto único ({{ local_nome }}); não considera irrigação não informada, escoamento, lençol freático raso nem
@@ -393,11 +352,36 @@
         com o balanço hídrico, não validade em campo.
       </div>
 
+      <div class="linha-recolhidos">
+      <details class="recolhido">
+        <summary>Dados utilizados na análise</summary>
+        <dl class="lista-tecnica">
+          <div><dt>Localização</dt><dd>{{ res.local.nome }}{% if res.local.tipo == 'municipio' %} (sede do município){% endif %}</dd></div>
+          <div><dt>Coordenadas e altitude</dt><dd>{{ '%.4f'|format(res.local.lat) }}, {{ '%.4f'|format(res.local.lon) }}
+            · {% if res.local.alt is not none %}{{ res.local.alt|round|int }} m ({{ res.local.fonte_alt }}){% else %}altitude não informada{% endif %}</dd></div>
+          <div><dt>Distância do local de treino</dt><dd>{{ res.local.distancia_km }} km</dd></div>
+          <div><dt>Cultura / solo</dt><dd>{{ res.entrada.cultura|capitalize }} / {{ res.entrada.solo }}</dd></div>
+          <div><dt>Semeadura / análise</dt><dd>{{ res.entrada.semeadura }} / {{ res.entrada.analise }}</dd></div>
+          <div><dt>Última irrigação</dt><dd>{% if res.entrada.irrigacao_data %}{{ res.entrada.irrigacao_data }}, {{ res.entrada.lamina }} mm{% else %}não informada{% endif %}</dd></div>
+          <div><dt>Período climático</dt><dd>{{ res.entrada.semeadura }} a {{ res.entrada.analise }}</dd></div>
+          {% if res.local.tipo != 'referencia' or not status_clima %}
+          <div><dt>Fonte do clima</dt><dd>NASA POWER (série diária, grade de cerca de 50 km), consultada para esta localidade</dd></div>
+          <div><dt>Tipo do dado</dt><dd>Estimativa de reanálise/modelagem e satélite — não é medição de estação meteorológica</dd></div>
+          {% else %}
+          <div><dt>Fonte do clima</dt><dd>{{ status_clima.fonte_nome }}</dd></div>
+          <div><dt>Tipo do dado</dt><dd>{{ status_clima.tipo_dado }}</dd></div>
+          <div><dt>Último dia disponível</dt><dd>{{ status_clima.ultima_data }}{% if status_clima.atualizado_em %} (base atualizada em {{ status_clima.atualizado_em }}){% endif %}</dd></div>
+          {% endif %}
+          <div><dt>Modelo</dt><dd>{{ modelo_nome }}</dd></div>
+        </dl>
+      </details>
+
       {% if metricas is not none %}
-      <details style="margin-top:1rem"><summary>Comparação dos modelos treinados</summary>
+      <details class="recolhido"><summary>Comparação dos modelos treinados</summary>
         {{ tabela_metricas(metricas) }}
       </details>
       {% endif %}
+      </div>
     {% elif not erros %}
       <div class="vazio">
         <strong>Aguardando análise</strong>

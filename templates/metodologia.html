@@ -2,207 +2,220 @@
 {% from "_macros.html" import tabela_metricas %}
 {% block titulo %}Metodologia{% endblock %}
 {% block conteudo %}
-<section class="plataforma-cab">
+<section class="capa-pagina" style="--foto: url('{{ url_for('static', filename='img/fotos/aerea-irrigacao.jpg') }}')">
   <div class="container">
-    <h1 style="font-size:1.8rem">Metodologia e informações técnicas</h1>
-    <p class="muted" style="max-width:68ch;margin:0">Como os dados são obtidos, como o balanço de água é calculado e como o modelo de Machine Learning entra na recomendação.</p>
+    <span class="sobretitulo">Metodologia</span>
+    <h1>Metodologia e informações técnicas</h1>
+    <p>Como os dados são obtidos, como o balanço de água é calculado e como o modelo de Machine Learning entra na recomendação.</p>
   </div>
 </section>
 
-<section class="secao">
-  <div class="container texto">
-    <h2>Objetivo do sistema</h2>
-    <p>Apoiar a decisão sobre irrigação em propriedades rurais com um protótipo de baixo custo, sem sensores nem equipamentos:
-       a partir de clima, solo e cultura, estimar a situação de água no solo e classificar a necessidade de irrigar.
-       O sistema recomenda; a decisão e a operação continuam com o produtor.</p>
-
-    <h2 style="margin-top:2rem">Visão geral do fluxo</h2>
-    <div class="grade" style="max-width:none">
-      <div class="cartao"><span class="passo-num">1</span><h3>Clima diário</h3><p>Temperatura, umidade, vento, radiação e chuva da fonte de dados.</p></div>
-      <div class="cartao"><span class="passo-num">2</span><h3>Balanço hídrico FAO-56</h3><p>Demanda da cultura (ETc) menos chuva e irrigação, limitado pela água que o solo comporta.</p></div>
-      <div class="cartao"><span class="passo-num">3</span><h3>Classificação</h3><p>Três níveis a partir do déficit de água, calculados de forma determinística (referência).</p></div>
-      <div class="cartao"><span class="passo-num">4</span><h3>Modelo de ML</h3><p>Aprende a estimar a classe a partir de um resumo do clima recente, da cultura, do solo e da última irrigação.</p></div>
-    </div>
-  </div>
-</section>
-
-<section class="secao" style="padding-top:0">
-  <div class="container texto">
-    <h2>Fontes de dados climáticos</h2>
-    {% if status_clima %}
-    <div class="faixa-dados" style="margin-bottom:1rem">
-      <div><strong>{{ status_clima.ultima_data }}</strong><span>Último dia disponível</span></div>
-      <div><strong>{{ status_clima.defasagem_dias }} dia{{ 's' if status_clima.defasagem_dias != 1 }}</strong><span>Defasagem em relação a hoje</span></div>
-      <div><strong>{{ status_clima.atualizado_em or 'não registrado' }}</strong><span>Base atualizada em</span></div>
-    </div>
-    {% endif %}
-    <ul>
-      <li><strong>Fonte usada:</strong> NASA POWER, série diária para o ponto de {{ local_nome }} (latitude −28,26; longitude −52,41; altitude 687 m).</li>
-      <li><strong>Natureza do dado:</strong> estimativas derivadas de reanálise/modelagem e de satélite. <em>Não são medições de uma estação meteorológica</em> e não são previsões: referem-se a dias que já ocorreram.</li>
-      <li><strong>Defasagem:</strong> os dias mais recentes ainda não estão completos na fonte. Esses dias são descartados, nunca preenchidos ou inventados; a análise vai até o último dia completo. A radiação solar costuma ser a variável que demora mais.</li>
-      <li><strong>Revisões:</strong> valores recentes são provisórios e podem ser revisados. Cada atualização baixa novamente os últimos 30 dias para incorporar revisões, e preserva o restante do histórico.</li>
-      <li><strong>Atualização:</strong> automática ao iniciar o sistema (uma vez por dia, havendo internet) e manual pelo botão da plataforma ou por <code>python scripts/atualizar_clima.py</code>.</li>
-      <li><strong>Localização escolhida pelo agricultor:</strong> por município (usamos a sede, geocodificada pelo Open-Meteo) ou por coordenadas, em qualquer região do Brasil. A posição de quem acessa o sistema nunca é usada. A altitude vem do modelo digital de elevação do Open-Meteo (ou é informada pelo usuário; na falta de ambas, usa-se a altitude média da célula da grade da NASA).</li>
-      <li><strong>Clima por localidade:</strong> para cada análise, o sistema consulta a NASA POWER para o período da semeadura até a data da análise. A grade da fonte tem cerca de 50 km: o resultado representa a região da propriedade, não o ponto exato. As consultas ficam em cache por 6 horas.</li>
-      <li><strong>Análises históricas:</strong> continuam possíveis para qualquer data desde {{ status_clima.primeira_data if status_clima else '2010' }}.</li>
-    </ul>
-
-    <h2 style="margin-top:2rem" id="variaveis">Variáveis consideradas</h2>
-    <div class="tabela"><table>
-      <tr><th>Variável</th><th>Origem</th><th>Uso</th></tr>
-      <tr><td>Temperatura máxima e mínima (°C)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
-      <tr><td>Umidade relativa (%)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
-      <tr><td>Velocidade do vento a 2 m (m/s)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
-      <tr><td>Radiação solar (MJ/m²/dia)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
-      <tr><td>Precipitação (mm/dia)</td><td>NASA POWER</td><td>Balanço hídrico e features</td></tr>
-      <tr><td>Cultura e data de semeadura</td><td>Usuário</td><td>Estágio, Kc, ciclo e profundidade de raiz</td></tr>
-      <tr><td>Tipo de solo</td><td>Usuário</td><td>Capacidade de campo e ponto de murcha (TAW/RAW)</td></tr>
-      <tr><td>Última irrigação (data e lâmina)</td><td>Usuário</td><td>Balanço hídrico e features</td></tr>
-    </table></div>
-  </div>
-</section>
-
-<section class="secao" style="padding-top:0">
-  <div class="container texto">
-    <h2>Cálculos de referência (FAO-56)</h2>
-    <ul>
-      <li><strong>ET0:</strong> evapotranspiração de referência diária pelo método de Penman-Monteith.</li>
-      <li><strong>ETc = Kc × ET0:</strong> demanda da cultura. O Kc varia com o estágio (inicial, desenvolvimento, intermediário, final).</li>
-      <li><strong>TAW = 1000 × (θcc − θpm) × Zr:</strong> água total disponível na zona das raízes (mm).</li>
-      <li><strong>RAW = p × TAW:</strong> água facilmente disponível; acima desse déficit a cultura passa a sofrer estresse hídrico.</li>
-      <li><strong>Dr:</strong> déficit hídrico do dia = Dr do dia anterior − chuva − irrigação + ETc, limitado entre 0 e TAW.</li>
-    </ul>
-
-    <h3>Parâmetros por cultura e solo</h3>
-    <div class="tabela"><table>
-      <tr><th>Cultura</th><th>Kc ini / mid / end</th><th>Estágios (dias)</th><th>Raiz Zr (m)</th><th>Fator p</th></tr>
-      {% for nome, c in culturas.items() %}
-      <tr><td>{{ nome|capitalize }}</td><td>{{ c.kc_ini }} / {{ c.kc_mid }} / {{ c.kc_end }}</td><td>{{ c.estagios|join(' / ') }} (ciclo {{ c.ciclo }})</td><td>{{ c.zr }}</td><td>{{ c.p }}</td></tr>
-      {% endfor %}
-    </table></div>
-    <div class="tabela" style="margin-top:.8rem"><table>
-      <tr><th>Solo</th><th>Capacidade de campo (m³/m³)</th><th>Ponto de murcha (m³/m³)</th></tr>
-      {% for nome, s in solos.items() %}<tr><td>{{ nome|capitalize }}</td><td>{{ s.fc }}</td><td>{{ s.wp }}</td></tr>{% endfor %}
-    </table></div>
-    <p class="muted" style="margin-top:.6rem">Valores de referência do FAO-56 usados no protótipo; ainda devem ser conferidos e ajustados à realidade de cada propriedade.</p>
-
-    <h2 style="margin-top:2rem">Critérios para recomendar a irrigação</h2>
-    <div class="tabela"><table>
-      <tr><th>Classe</th><th>Condição sobre o déficit Dr</th><th>Origem do critério</th></tr>
-      <tr><td>{{ nomes_classes[0] }}</td><td>Dr &lt; {{ alpha }} × RAW</td><td>Limite de alerta definido pela equipe</td></tr>
-      <tr><td>{{ nomes_classes[1] }}</td><td>{{ alpha }} × RAW ≤ Dr &lt; RAW</td><td>Limite de alerta definido pela equipe</td></tr>
-      <tr><td>{{ nomes_classes[2] }}</td><td>Dr ≥ RAW</td><td>Limiar de estresse do FAO-56</td></tr>
-    </table></div>
-    <p class="muted" style="margin-top:.6rem">O fator {{ alpha }} do alerta é uma escolha de projeto, não um valor agronômico validado.</p>
-  </div>
-</section>
-
-<section class="secao" style="padding-top:0">
-  <div class="container texto">
-    <h2>Modelo de Machine Learning</h2>
-    <p>Como não existem dados reais rotulados de “precisa irrigar”, os rótulos de treino são <strong>gerados pelo balanço hídrico</strong>:
-       1.350 safras simuladas (3 culturas × 3 solos × 5 datas de semeadura × 15 anos × 2 políticas de irrigação, sequeiro e irrigado)
-       sobre o clima real da fonte. O modelo aprende a reproduzir essa classificação a partir de variáveis resumidas
-       (chuva e ETc de 7 e 14 dias, médias climáticas de 7 dias, dias desde a última chuva e irrigação, cultura, solo, Kc),
-       sem receber o déficit Dr.</p>
-    <ul>
-      <li><strong>Divisão por ano de semeadura:</strong> treino {{ anos_treino[0] }}–{{ anos_treino[1] }}, validação {{ anos_validacao|join('–') }}, teste {{ anos_teste|join(', ') }} (nunca aleatória, para evitar vazamento entre dias da mesma safra).</li>
-      <li><strong>Modelos comparados:</strong> regressão logística regularizada, Random Forest, XGBoost, MLP e um modelo de base (sempre a classe mais frequente).</li>
-      <li><strong>Seleção:</strong> maior F1-macro na validação. O selecionado fica treinado só com os anos de treino e é avaliado uma vez no teste; os anos de validação ficam de fora do ajuste e servem também para calibrar os intervalos de predição (veja abaixo).</li>
-    </ul>
-    {% if metricas is not none %}
-    {{ tabela_metricas(metricas) }}
-    <p class="muted" style="margin-top:.6rem">Métricas calculadas na execução do pipeline. Os modelos não selecionados foram avaliados com ajuste só no treino.{% if metadata %} Modelo em uso: <strong>{{ metadata.modelo }}</strong>, treinado em {{ metadata.data[:10] }}.{% endif %}</p>
-    {% endif %}
-  </div>
-</section>
-
-<section class="secao" style="padding-top:0" id="incerteza">
-  <div class="container texto">
-    <h2>Quão certo é o resultado? (intervalos de predição)</h2>
-    {% if conformal %}
-    {% set av = conformal.avaliacao_teste %}
-    {% set d = av.distribuicao_tamanhos %}
-    {% set nomes_metodo = {'lac': 'LAC', 'mondrian': 'Mondrian (por classe)', 'aps': 'APS'} %}
-    {% set nomes_classe = {'0': 'Sem necessidade', '1': 'Atenção', '2': 'Irrigação recomendada'} %}
-    <p>Junto com a resposta, o sistema diz se pode haver outra possibilidade. Quando a previsão é um número, o intervalo de
-       predição é uma margem em volta dele. Aqui a resposta é uma classe, então usamos o equivalente para classificação, a
-       <strong>predição conformal</strong>: em vez de uma classe só, o modelo devolve um <em>conjunto</em> de classes possíveis. O conjunto tem
-       uma classe quando o modelo está seguro e duas (ou três) quando está em dúvida.</p>
-
-    <h3>Como funciona, em linguagem simples</h3>
+<div class="container doc">
+  <nav class="sumario" aria-label="Nesta página">
+    <strong>Nesta página</strong>
     <ol>
-      <li>Separamos safras que o modelo <strong>nunca viu</strong> ao aprender ({{ conformal.anos_calibracao[0] }}–{{ conformal.anos_calibracao[-1] }}).</li>
-      <li>Medimos o quanto o modelo erra nelas. Com isso descobrimos até onde é preciso ampliar a resposta para que, em
-          {{ (conformal.nivel * 100)|round|int }} de cada 100 casos, a classe certa esteja dentro do conjunto.</li>
-      <li>Num caso novo, se só uma classe passa nesse critério, a tela mostra <strong>“Resultado confiável”</strong>. Se passa mais de uma, mostra
-          <strong>“Resultado incerto”</strong> e diz qual outra é possível.</li>
+        <li><a href="#objetivo-do-sistema">Objetivo do sistema</a></li>
+        <li><a href="#visao-geral-do-fluxo">Visão geral do fluxo</a></li>
+        <li><a href="#fontes-de-dados-climaticos">Fontes de dados climáticos</a></li>
+        <li><a href="#variaveis">Variáveis consideradas</a></li>
+        <li><a href="#calculos-de-referencia-fao-56">Cálculos de referência (FAO-56)</a></li>
+        <li><a href="#criterios-para-recomendar-a-irrigacao">Critérios para recomendar a irrigação</a></li>
+        <li><a href="#modelo-de-machine-learning">Modelo de Machine Learning</a></li>
+        <li><a href="#incerteza">Quão certo é o resultado? (intervalos de predição)</a></li>
+        <li><a href="#limitacoes">Limitações da ferramenta</a></li>
     </ol>
+  </nav>
+  <div class="doc-corpo">
+    <section class="bloco" id="objetivo-do-sistema">
+      <h2>Objetivo do sistema</h2>
+      <p>Apoiar a decisão sobre irrigação em propriedades rurais com um protótipo de baixo custo, sem sensores nem equipamentos:
+         a partir de clima, solo e cultura, estimar a situação de água no solo e classificar a necessidade de irrigar.
+         O sistema recomenda; a decisão e a operação continuam com o produtor.</p>
+    </section>
 
-    <h3>O que foi medido nos anos de teste ({{ conformal.anos_teste[0] }}–{{ conformal.anos_teste[-1] }})</h3>
-    <p class="muted">Esses anos não foram usados nem para treinar nem para calibrar.</p>
-    <ul>
-      <li><strong>Cobertura:</strong> em {{ '%.1f'|format(av.cobertura * 100) }}% dos casos a classe certa estava dentro do conjunto. A meta era {{ (conformal.nivel * 100)|round|int }}%.</li>
-      <li><strong>Tamanho do conjunto:</strong> em média {{ '%.2f'|format(av.tamanho_medio) }} classes. Foram {{ '%.1f'|format(d['1'] * 100) }}% dos casos com 1 classe, {{ '%.1f'|format(d['2'] * 100) }}% com 2 e {{ '%.1f'|format(d['3'] * 100) }}% com 3.</li>
-      <li><strong>Por classe:</strong>
-        {% for c, v in av.cobertura_por_classe.items() %}{{ nomes_classe[c] }} {{ '%.1f'|format(v * 100) }}%{{ '; ' if not loop.last }}{% endfor %}.</li>
-    </ul>
+    <section class="bloco" id="visao-geral-do-fluxo">
+      <h2>Visão geral do fluxo</h2>
+      <div class="grade" style="max-width:none">
+        <div class="cartao"><span class="passo-num">1</span><h3>Clima diário</h3><p>Temperatura, umidade, vento, radiação e chuva da fonte de dados.</p></div>
+        <div class="cartao"><span class="passo-num">2</span><h3>Balanço hídrico FAO-56</h3><p>Demanda da cultura (ETc) menos chuva e irrigação, limitado pela água que o solo comporta.</p></div>
+        <div class="cartao"><span class="passo-num">3</span><h3>Classificação</h3><p>Três níveis a partir do déficit de água, calculados de forma determinística (referência).</p></div>
+        <div class="cartao"><span class="passo-num">4</span><h3>Modelo de ML</h3><p>Aprende a estimar a classe a partir de um resumo do clima recente, da cultura, do solo e da última irrigação.</p></div>
+      </div>
+    </section>
 
-    {% if tabela_conformal is not none %}
-    <h3>Os três métodos testados</h3>
-    <div class="tabela"><table class="numerica">
-      <tr><th>Método</th><th>Cobertura</th><th>Tamanho médio</th><th>Com 1 classe</th><th>Cobertura: Sem necessidade</th><th>Cobertura: Atenção</th><th>Cobertura: Irrigação recomendada</th></tr>
-      {% for _, l in tabela_conformal.iterrows() %}
-      <tr class="{{ 'sel' if l['usado'] }}">
-        <td>{{ nomes_metodo[l['metodo']] }}{% if l['usado'] %} (usado){% endif %}</td>
-        <td>{{ '%.1f'|format(l['cobertura_teste'] * 100) }}%</td><td>{{ '%.2f'|format(l['tamanho_medio_teste']) }}</td>
-        <td>{{ '%.1f'|format(l['pct_tamanho_1_teste'] * 100) }}%</td>
-        <td>{{ '%.1f'|format(l['cobertura_classe_0_teste'] * 100) }}%</td><td>{{ '%.1f'|format(l['cobertura_classe_1_teste'] * 100) }}%</td><td>{{ '%.1f'|format(l['cobertura_classe_2_teste'] * 100) }}%</td>
-      </tr>
-      {% endfor %}
-    </table></div>
-    <ul style="margin-top:.8rem">
-      <li><strong>LAC:</strong> o mais simples e o que gera conjuntos menores. Dá a garantia na média de todos os casos, mas não por classe.</li>
-      <li><strong>Mondrian:</strong> calibra cada classe separadamente, para que nenhuma fique mal coberta.</li>
-      <li><strong>APS:</strong> mais cauteloso: cobre mais, mas com conjuntos bem maiores.</li>
-    </ul>
-    <p>{% if conformal.metodo == 'mondrian' %}Foi usado o <strong>Mondrian</strong>. Antes de olhar o teste, vimos na própria calibração que o LAC deixava
-       a classe “Atenção” com cobertura bem abaixo da meta, e o critério automático do sistema, definido antes, troca para o Mondrian nesse caso.
-       {% else %}Foi usado o <strong>{{ nomes_metodo[conformal.metodo] }}</strong>, escolhido por um critério automático definido antes de olhar o teste.{% endif %}
-       O método foi programado diretamente com numpy (algumas dezenas de linhas), sem biblioteca extra.</p>
-    {% endif %}
-
-    <h3>Cuidados ao interpretar</h3>
-    <ul>
-      <li><strong>É uma garantia na média, não caso a caso.</strong> Com {{ (conformal.nivel * 100)|round|int }}%, cerca de {{ 100 - (conformal.nivel * 100)|round|int }} em cada 100 conjuntos podem não conter a classe certa.</li>
-      <li><strong>Só vale para casos parecidos com os da calibração:</strong> o local de treino ({{ local_nome }}) e análises de outubro a maio. Fora disso o resultado principal
-          vem do cálculo FAO-56 e <strong>o intervalo não é mostrado</strong>, porque a garantia não se aplica.</li>
-      {% if metadata and metadata.metricas and metadata.metricas.teste.f1_macro > metadata.metricas.validacao.f1_macro %}
-      <li>A cobertura no teste ficou acima da meta, o que se explica em boa parte por os anos de calibração terem sido um pouco mais difíceis para o modelo do que os de teste (F1-macro {{ '%.3f'|format(metadata.metricas.validacao.f1_macro) }} na calibração e {{ '%.3f'|format(metadata.metricas.teste.f1_macro) }} no teste). É o lado seguro do erro, mas mostra que a cobertura depende do clima dos anos usados.</li>
+    <section class="bloco" id="fontes-de-dados-climaticos">
+      <h2>Fontes de dados climáticos</h2>
+      {% if status_clima %}
+      <div class="faixa-dados" style="margin-bottom:1rem">
+        <div><strong>{{ status_clima.ultima_data }}</strong><span>Último dia disponível</span></div>
+        <div><strong>{{ status_clima.defasagem_dias }} dia{{ 's' if status_clima.defasagem_dias != 1 }}</strong><span>Defasagem em relação a hoje</span></div>
+        <div><strong>{{ status_clima.atualizado_em or 'não registrado' }}</strong><span>Base atualizada em</span></div>
+      </div>
       {% endif %}
-      <li>As safras simuladas de um mesmo ano compartilham o mesmo clima, então há menos informação independente do que linhas na tabela ({{ conformal.n_calibracao }} linhas, de apenas {{ conformal.anos_calibracao|length }} anos de clima).</li>
-      <li>Os anos de calibração também foram usados para escolher o modelo entre os quatro candidatos, o que pode deixar a calibração um pouco otimista. Por isso o teste, que nunca foi usado, é a medida que vale.</li>
-      <li>O modelo foi treinado <strong>só com {{ anos_treino[0] }}–{{ anos_treino[1] }}</strong>. Os anos de calibração ficaram de fora do ajuste de propósito: se o modelo os tivesse visto, ele pareceria mais certo do que é e o sistema mostraria “Resultado confiável” sempre.</li>
-    </ul>
-    {% else %}
-    <p class="muted">Este modelo não tem calibração conforme; os intervalos de predição não estão disponíveis.</p>
-    {% endif %}
-  </div>
-</section>
+      <ul>
+        <li><strong>Fonte usada:</strong> NASA POWER, série diária para o ponto de {{ local_nome }} (latitude −28,26; longitude −52,41; altitude 687 m).</li>
+        <li><strong>Natureza do dado:</strong> estimativas derivadas de reanálise/modelagem e de satélite. <em>Não são medições de uma estação meteorológica</em> e não são previsões: referem-se a dias que já ocorreram.</li>
+        <li><strong>Defasagem:</strong> os dias mais recentes ainda não estão completos na fonte. Esses dias são descartados, nunca preenchidos ou inventados; a análise vai até o último dia completo. A radiação solar costuma ser a variável que demora mais.</li>
+        <li><strong>Revisões:</strong> valores recentes são provisórios e podem ser revisados. Cada atualização baixa novamente os últimos 30 dias para incorporar revisões, e preserva o restante do histórico.</li>
+        <li><strong>Atualização:</strong> automática ao iniciar o sistema (uma vez por dia, havendo internet) e manual pelo botão da plataforma ou por <code>python scripts/atualizar_clima.py</code>.</li>
+        <li><strong>Localização escolhida pelo agricultor:</strong> por município (usamos a sede, geocodificada pelo Open-Meteo) ou por coordenadas, em qualquer região do Brasil. A posição de quem acessa o sistema nunca é usada. A altitude vem do modelo digital de elevação do Open-Meteo (ou é informada pelo usuário; na falta de ambas, usa-se a altitude média da célula da grade da NASA).</li>
+        <li><strong>Clima por localidade:</strong> para cada análise, o sistema consulta a NASA POWER para o período da semeadura até a data da análise. A grade da fonte tem cerca de 50 km: o resultado representa a região da propriedade, não o ponto exato. As consultas ficam em cache por 6 horas.</li>
+        <li><strong>Análises históricas:</strong> continuam possíveis para qualquer data desde {{ status_clima.primeira_data if status_clima else '2010' }}.</li>
+      </ul>
+    </section>
 
-<section class="secao" style="padding-top:0" id="limitacoes">
-  <div class="container texto">
-    <h2>Limitações da ferramenta</h2>
-    <ul>
-      <li><strong>Rótulos simulados:</strong> o desempenho do modelo mede concordância com o balanço FAO-56, não acerto da decisão em campo. Uma métrica alta não prova validade agronômica, e não houve validação em campo.</li>
-      <li><strong>Dados estimados, não medidos:</strong> o clima vem de reanálise/satélite para um ponto único; pode diferir do que ocorreu na propriedade, principalmente a chuva local.</li>
-      <li><strong>Domínio do modelo:</strong> o modelo foi treinado só com o clima de {{ local_nome }} e com análises de outubro a maio. Fora disso (localidade a mais de {{ raio_km }} km do ponto de treino ou data de junho a setembro) o resultado do modelo seria extrapolação; nesses casos o resultado principal é o cálculo de referência FAO-56, que vale para qualquer lugar, e o modelo é mostrado apenas como estimativa complementar.</li>
-      <li><strong>Defasagem:</strong> a análise vai até o último dia completo da fonte, que pode ser alguns dias antes de hoje. Não são usadas previsões do tempo.</li>
-      <li><strong>Simplificações do balanço:</strong> solo na capacidade de campo na semeadura, precipitação efetiva igual à total, sem ascensão capilar, sem ajuste por estresse e profundidade de raiz constante.</li>
-      <li><strong>Parâmetros de referência:</strong> Kc, estágios, raízes, fator p e umidades do solo precisam ser conferidos e ajustados.</li>
-      <li><strong>Abrangência:</strong> uma localidade ({{ local_nome }}), três culturas e três classes de solo.</li>
-      <li><strong>Escopo:</strong> o sistema não controla irrigação, não calcula a lâmina bruta (depende da eficiência do sistema) e não garante economia de água.</li>
-    </ul>
+    <section class="bloco" id="variaveis">
+      <h2>Variáveis consideradas</h2>
+      <div class="tabela"><table>
+        <tr><th>Variável</th><th>Origem</th><th>Uso</th></tr>
+        <tr><td>Temperatura máxima e mínima (°C)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+        <tr><td>Umidade relativa (%)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+        <tr><td>Velocidade do vento a 2 m (m/s)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+        <tr><td>Radiação solar (MJ/m²/dia)</td><td>NASA POWER</td><td>ET0 e features</td></tr>
+        <tr><td>Precipitação (mm/dia)</td><td>NASA POWER</td><td>Balanço hídrico e features</td></tr>
+        <tr><td>Cultura e data de semeadura</td><td>Usuário</td><td>Estágio, Kc, ciclo e profundidade de raiz</td></tr>
+        <tr><td>Tipo de solo</td><td>Usuário</td><td>Capacidade de campo e ponto de murcha (TAW/RAW)</td></tr>
+        <tr><td>Última irrigação (data e lâmina)</td><td>Usuário</td><td>Balanço hídrico e features</td></tr>
+      </table></div>
+    </section>
+
+    <section class="bloco" id="calculos-de-referencia-fao-56">
+      <h2>Cálculos de referência (FAO-56)</h2>
+      <ul>
+        <li><strong>ET0:</strong> evapotranspiração de referência diária pelo método de Penman-Monteith.</li>
+        <li><strong>ETc = Kc × ET0:</strong> demanda da cultura. O Kc varia com o estágio (inicial, desenvolvimento, intermediário, final).</li>
+        <li><strong>TAW = 1000 × (θcc − θpm) × Zr:</strong> água total disponível na zona das raízes (mm).</li>
+        <li><strong>RAW = p × TAW:</strong> água facilmente disponível; acima desse déficit a cultura passa a sofrer estresse hídrico.</li>
+        <li><strong>Dr:</strong> déficit hídrico do dia = Dr do dia anterior − chuva − irrigação + ETc, limitado entre 0 e TAW.</li>
+      </ul>
+
+      <h3>Parâmetros por cultura e solo</h3>
+      <div class="tabela"><table>
+        <tr><th>Cultura</th><th>Kc ini / mid / end</th><th>Estágios (dias)</th><th>Raiz Zr (m)</th><th>Fator p</th></tr>
+        {% for nome, c in culturas.items() %}
+        <tr><td>{{ nome|capitalize }}</td><td>{{ c.kc_ini }} / {{ c.kc_mid }} / {{ c.kc_end }}</td><td>{{ c.estagios|join(' / ') }} (ciclo {{ c.ciclo }})</td><td>{{ c.zr }}</td><td>{{ c.p }}</td></tr>
+        {% endfor %}
+      </table></div>
+      <div class="tabela" style="margin-top:.8rem"><table>
+        <tr><th>Solo</th><th>Capacidade de campo (m³/m³)</th><th>Ponto de murcha (m³/m³)</th></tr>
+        {% for nome, s in solos.items() %}<tr><td>{{ nome|capitalize }}</td><td>{{ s.fc }}</td><td>{{ s.wp }}</td></tr>{% endfor %}
+      </table></div>
+      <p class="muted" style="margin-top:.6rem">Valores de referência do FAO-56 usados no protótipo; ainda devem ser conferidos e ajustados à realidade de cada propriedade.</p>
+    </section>
+
+    <section class="bloco" id="criterios-para-recomendar-a-irrigacao">
+      <h2>Critérios para recomendar a irrigação</h2>
+      <div class="tabela"><table>
+        <tr><th>Classe</th><th>Condição sobre o déficit Dr</th><th>Origem do critério</th></tr>
+        <tr><td>{{ nomes_classes[0] }}</td><td>Dr &lt; {{ alpha }} × RAW</td><td>Limite de alerta definido pela equipe</td></tr>
+        <tr><td>{{ nomes_classes[1] }}</td><td>{{ alpha }} × RAW ≤ Dr &lt; RAW</td><td>Limite de alerta definido pela equipe</td></tr>
+        <tr><td>{{ nomes_classes[2] }}</td><td>Dr ≥ RAW</td><td>Limiar de estresse do FAO-56</td></tr>
+      </table></div>
+      <p class="muted" style="margin-top:.6rem">O fator {{ alpha }} do alerta é uma escolha de projeto, não um valor agronômico validado.</p>
+    </section>
+
+    <section class="bloco" id="modelo-de-machine-learning">
+      <h2>Modelo de Machine Learning</h2>
+      <p>Como não existem dados reais rotulados de “precisa irrigar”, os rótulos de treino são <strong>gerados pelo balanço hídrico</strong>:
+         1.350 safras simuladas (3 culturas × 3 solos × 5 datas de semeadura × 15 anos × 2 políticas de irrigação, sequeiro e irrigado)
+         sobre o clima real da fonte. O modelo aprende a reproduzir essa classificação a partir de variáveis resumidas
+         (chuva e ETc de 7 e 14 dias, médias climáticas de 7 dias, dias desde a última chuva e irrigação, cultura, solo, Kc),
+         sem receber o déficit Dr.</p>
+      <ul>
+        <li><strong>Divisão por ano de semeadura:</strong> treino {{ anos_treino[0] }}–{{ anos_treino[1] }}, validação {{ anos_validacao|join('–') }}, teste {{ anos_teste|join(', ') }} (nunca aleatória, para evitar vazamento entre dias da mesma safra).</li>
+        <li><strong>Modelos comparados:</strong> regressão logística regularizada, Random Forest, XGBoost, MLP e um modelo de base (sempre a classe mais frequente).</li>
+        <li><strong>Seleção:</strong> maior F1-macro na validação. O selecionado fica treinado só com os anos de treino e é avaliado uma vez no teste; os anos de validação ficam de fora do ajuste e servem também para calibrar os intervalos de predição (veja abaixo).</li>
+      </ul>
+      {% if metricas is not none %}
+      {{ tabela_metricas(metricas) }}
+      <p class="muted" style="margin-top:.6rem">Métricas calculadas na execução do pipeline. Os modelos não selecionados foram avaliados com ajuste só no treino.{% if metadata %} Modelo em uso: <strong>{{ metadata.modelo }}</strong>, treinado em {{ metadata.data[:10] }}.{% endif %}</p>
+      {% endif %}
+    </section>
+
+    <section class="bloco" id="incerteza">
+      <h2>Quão certo é o resultado? (intervalos de predição)</h2>
+      {% if conformal %}
+      {% set av = conformal.avaliacao_teste %}
+      {% set d = av.distribuicao_tamanhos %}
+      {% set nomes_metodo = {'lac': 'LAC', 'mondrian': 'Mondrian (por classe)', 'aps': 'APS'} %}
+      {% set nomes_classe = {'0': 'Sem necessidade', '1': 'Atenção', '2': 'Irrigação recomendada'} %}
+      <p>Junto com a resposta, o sistema diz se pode haver outra possibilidade. Quando a previsão é um número, o intervalo de
+         predição é uma margem em volta dele. Aqui a resposta é uma classe, então usamos o equivalente para classificação, a
+         <strong>predição conformal</strong>: em vez de uma classe só, o modelo devolve um <em>conjunto</em> de classes possíveis. O conjunto tem
+         uma classe quando o modelo está seguro e duas (ou três) quando está em dúvida.</p>
+
+      <h3>Como funciona, em linguagem simples</h3>
+      <ol>
+        <li>Separamos safras que o modelo <strong>nunca viu</strong> ao aprender ({{ conformal.anos_calibracao[0] }}–{{ conformal.anos_calibracao[-1] }}).</li>
+        <li>Medimos o quanto o modelo erra nelas. Com isso descobrimos até onde é preciso ampliar a resposta para que, em
+            {{ (conformal.nivel * 100)|round|int }} de cada 100 casos, a classe certa esteja dentro do conjunto.</li>
+        <li>Num caso novo, se só uma classe passa nesse critério, a tela mostra <strong>“Resultado confiável”</strong>. Se passa mais de uma, mostra
+            <strong>“Resultado incerto”</strong> e diz qual outra é possível.</li>
+      </ol>
+
+      <h3>O que foi medido nos anos de teste ({{ conformal.anos_teste[0] }}–{{ conformal.anos_teste[-1] }})</h3>
+      <p class="muted">Esses anos não foram usados nem para treinar nem para calibrar.</p>
+      <ul>
+        <li><strong>Cobertura:</strong> em {{ '%.1f'|format(av.cobertura * 100) }}% dos casos a classe certa estava dentro do conjunto. A meta era {{ (conformal.nivel * 100)|round|int }}%.</li>
+        <li><strong>Tamanho do conjunto:</strong> em média {{ '%.2f'|format(av.tamanho_medio) }} classes. Foram {{ '%.1f'|format(d['1'] * 100) }}% dos casos com 1 classe, {{ '%.1f'|format(d['2'] * 100) }}% com 2 e {{ '%.1f'|format(d['3'] * 100) }}% com 3.</li>
+        <li><strong>Por classe:</strong>
+          {% for c, v in av.cobertura_por_classe.items() %}{{ nomes_classe[c] }} {{ '%.1f'|format(v * 100) }}%{{ '; ' if not loop.last }}{% endfor %}.</li>
+      </ul>
+
+      {% if tabela_conformal is not none %}
+      <h3>Os três métodos testados</h3>
+      <div class="tabela"><table class="numerica">
+        <tr><th>Método</th><th>Cobertura</th><th>Tamanho médio</th><th>Com 1 classe</th><th>Cobertura: Sem necessidade</th><th>Cobertura: Atenção</th><th>Cobertura: Irrigação recomendada</th></tr>
+        {% for _, l in tabela_conformal.iterrows() %}
+        <tr class="{{ 'sel' if l['usado'] }}">
+          <td>{{ nomes_metodo[l['metodo']] }}{% if l['usado'] %} (usado){% endif %}</td>
+          <td>{{ '%.1f'|format(l['cobertura_teste'] * 100) }}%</td><td>{{ '%.2f'|format(l['tamanho_medio_teste']) }}</td>
+          <td>{{ '%.1f'|format(l['pct_tamanho_1_teste'] * 100) }}%</td>
+          <td>{{ '%.1f'|format(l['cobertura_classe_0_teste'] * 100) }}%</td><td>{{ '%.1f'|format(l['cobertura_classe_1_teste'] * 100) }}%</td><td>{{ '%.1f'|format(l['cobertura_classe_2_teste'] * 100) }}%</td>
+        </tr>
+        {% endfor %}
+      </table></div>
+      <ul style="margin-top:.8rem">
+        <li><strong>LAC:</strong> o mais simples e o que gera conjuntos menores. Dá a garantia na média de todos os casos, mas não por classe.</li>
+        <li><strong>Mondrian:</strong> calibra cada classe separadamente, para que nenhuma fique mal coberta.</li>
+        <li><strong>APS:</strong> mais cauteloso: cobre mais, mas com conjuntos bem maiores.</li>
+      </ul>
+      <p>{% if conformal.metodo == 'mondrian' %}Foi usado o <strong>Mondrian</strong>. Antes de olhar o teste, vimos na própria calibração que o LAC deixava
+         a classe “Atenção” com cobertura bem abaixo da meta, e o critério automático do sistema, definido antes, troca para o Mondrian nesse caso.
+         {% else %}Foi usado o <strong>{{ nomes_metodo[conformal.metodo] }}</strong>, escolhido por um critério automático definido antes de olhar o teste.{% endif %}
+         O método foi programado diretamente com numpy (algumas dezenas de linhas), sem biblioteca extra.</p>
+      {% endif %}
+
+      <h3>Cuidados ao interpretar</h3>
+      <ul>
+        <li><strong>É uma garantia na média, não caso a caso.</strong> Com {{ (conformal.nivel * 100)|round|int }}%, cerca de {{ 100 - (conformal.nivel * 100)|round|int }} em cada 100 conjuntos podem não conter a classe certa.</li>
+        <li><strong>Só vale para casos parecidos com os da calibração:</strong> o local de treino ({{ local_nome }}) e análises de outubro a maio. Fora disso o resultado principal
+            vem do cálculo FAO-56 e <strong>o intervalo não é mostrado</strong>, porque a garantia não se aplica.</li>
+        {% if metadata and metadata.metricas and metadata.metricas.teste.f1_macro > metadata.metricas.validacao.f1_macro %}
+        <li>A cobertura no teste ficou acima da meta, o que se explica em boa parte por os anos de calibração terem sido um pouco mais difíceis para o modelo do que os de teste (F1-macro {{ '%.3f'|format(metadata.metricas.validacao.f1_macro) }} na calibração e {{ '%.3f'|format(metadata.metricas.teste.f1_macro) }} no teste). É o lado seguro do erro, mas mostra que a cobertura depende do clima dos anos usados.</li>
+        {% endif %}
+        <li>As safras simuladas de um mesmo ano compartilham o mesmo clima, então há menos informação independente do que linhas na tabela ({{ conformal.n_calibracao }} linhas, de apenas {{ conformal.anos_calibracao|length }} anos de clima).</li>
+        <li>Os anos de calibração também foram usados para escolher o modelo entre os quatro candidatos, o que pode deixar a calibração um pouco otimista. Por isso o teste, que nunca foi usado, é a medida que vale.</li>
+        <li>O modelo foi treinado <strong>só com {{ anos_treino[0] }}–{{ anos_treino[1] }}</strong>. Os anos de calibração ficaram de fora do ajuste de propósito: se o modelo os tivesse visto, ele pareceria mais certo do que é e o sistema mostraria “Resultado confiável” sempre.</li>
+      </ul>
+      {% else %}
+      <p class="muted">Este modelo não tem calibração conforme; os intervalos de predição não estão disponíveis.</p>
+      {% endif %}
+    </section>
+
+    <section class="bloco" id="limitacoes">
+      <h2>Limitações da ferramenta</h2>
+      <ul>
+        <li><strong>Rótulos simulados:</strong> o desempenho do modelo mede concordância com o balanço FAO-56, não acerto da decisão em campo. Uma métrica alta não prova validade agronômica, e não houve validação em campo.</li>
+        <li><strong>Dados estimados, não medidos:</strong> o clima vem de reanálise/satélite para um ponto único; pode diferir do que ocorreu na propriedade, principalmente a chuva local.</li>
+        <li><strong>Domínio do modelo:</strong> o modelo foi treinado só com o clima de {{ local_nome }} e com análises de outubro a maio. Fora disso (localidade a mais de {{ raio_km }} km do ponto de treino ou data de junho a setembro) o resultado do modelo seria extrapolação; nesses casos o resultado principal é o cálculo de referência FAO-56, que vale para qualquer lugar, e o modelo é mostrado apenas como estimativa complementar.</li>
+        <li><strong>Defasagem:</strong> a análise vai até o último dia completo da fonte, que pode ser alguns dias antes de hoje. Não são usadas previsões do tempo.</li>
+        <li><strong>Simplificações do balanço:</strong> solo na capacidade de campo na semeadura, precipitação efetiva igual à total, sem ascensão capilar, sem ajuste por estresse e profundidade de raiz constante.</li>
+        <li><strong>Parâmetros de referência:</strong> Kc, estágios, raízes, fator p e umidades do solo precisam ser conferidos e ajustados.</li>
+        <li><strong>Abrangência:</strong> uma localidade ({{ local_nome }}), três culturas e três classes de solo.</li>
+        <li><strong>Escopo:</strong> o sistema não controla irrigação, não calcula a lâmina bruta (depende da eficiência do sistema) e não garante economia de água.</li>
+      </ul>
+    </section>
   </div>
-</section>
+</div>
 {% endblock %}

@@ -28,18 +28,21 @@ MSGS_ATUALIZACAO = {
                       "Os dados já salvos continuam em uso."),
 }
 
-# Exemplos que apenas preenchem o formulário; o resultado é calculado normalmente.
+# Exemplos da página inicial: um no local de referência (onde o resultado vem do modelo) e os demais em
+# outras regiões produtoras, onde o sistema busca o clima do município e usa o cálculo de referência FAO-56.
 PRESETS_HISTORICOS = [
-    {"titulo": "Milho em solo médio", "rotulo": "Safra 2024/25", "local_rotulo": config.LOCAL_NOME,
+    {"titulo": "Milho em Passo Fundo", "rotulo": "Safra 2024/25, local onde o modelo foi treinado", "local_rotulo": config.LOCAL_NOME,
      "cultura": "milho", "solo": "médio", "data_semeadura": "2024-10-15", "data_analise": "2025-01-10"},
-    {"titulo": "Soja em solo argiloso", "rotulo": "Safra 2024/25, com irrigação informada", "local_rotulo": config.LOCAL_NOME,
+    {"titulo": "Soja em Rio Verde", "rotulo": "Safra 2024/25, com irrigação informada", "local_rotulo": "Rio Verde – GO",
+     "local_modo": "municipio", "municipio": "Rio Verde – GO",
      "cultura": "soja", "solo": "argiloso", "data_semeadura": "2024-11-01", "data_analise": "2025-01-20",
      "data_irrigacao": "2025-01-12", "lamina_irrigacao": "25"},
-    {"titulo": "Feijão em solo arenoso", "rotulo": "Safra 2024/25", "local_rotulo": config.LOCAL_NOME,
-     "cultura": "feijão", "solo": "arenoso", "data_semeadura": "2024-10-15", "data_analise": "2025-01-05"},
+    {"titulo": "Feijão em Unaí", "rotulo": "Safra de inverno 2024, período seco", "local_rotulo": "Unaí – MG",
+     "local_modo": "municipio", "municipio": "Unaí – MG",
+     "cultura": "feijão", "solo": "arenoso", "data_semeadura": "2024-05-10", "data_analise": "2024-07-10"},
 ]
 PRESET_OUTRA_REGIAO = {
-    "titulo": "Soja em solo médio", "rotulo": "Safra 2025/26, outra região", "local_rotulo": "Sorriso – MT",
+    "titulo": "Soja em Sorriso", "rotulo": "Safra 2025/26", "local_rotulo": "Sorriso – MT",
     "local_modo": "municipio", "municipio": "Sorriso – MT",
     "cultura": "soja", "solo": "médio", "data_semeadura": "2025-10-10", "data_analise": "2026-01-20",
 }
@@ -197,8 +200,9 @@ def create_app(pasta=config.RAIZ, clima=None, atualizar=None, hoje=None, limite_
             semeadura = ultima - pd.Timedelta(days=40)
             if semeadura >= df.index.min():
                 lista.append({
-                    "titulo": "Milho em solo médio", "rotulo": "Situação atual, com os dados mais recentes",
-                    "local_rotulo": config.LOCAL_NOME, "cultura": "milho", "solo": "médio",
+                    "titulo": "Milho em Cascavel", "rotulo": "Situação atual, com os dados mais recentes",
+                    "local_rotulo": "Cascavel – PR", "local_modo": "municipio", "municipio": "Cascavel – PR",
+                    "cultura": "milho", "solo": "médio",
                     "data_semeadura": semeadura.date().isoformat(), "data_analise": ultima.date().isoformat(),
                 })
         lista.append(dict(PRESET_OUTRA_REGIAO))
@@ -208,7 +212,16 @@ def create_app(pasta=config.RAIZ, clima=None, atualizar=None, hoje=None, limite_
 
     @app.route("/")
     def inicio():
-        return render_template("inicio.html", presets=_presets(), pagina="inicio")
+        conformal = (metadata or {}).get("conformal") or {}
+        numeros = {
+            "safras": len(config.ANOS_SEMEADURA),
+            "anos": (min(config.ANOS_SEMEADURA), max(config.ANOS_SEMEADURA)),
+            "culturas": len(config.CULTURAS),
+            "solos": len(config.SOLOS),
+            "cobertura": conformal.get("avaliacao_teste", {}).get("cobertura"),
+            "nivel": conformal.get("nivel"),
+        }
+        return render_template("inicio.html", presets=_presets(), pagina="inicio", numeros=numeros)
 
     @app.route("/saude")
     def saude():
