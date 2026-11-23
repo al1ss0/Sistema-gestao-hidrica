@@ -1,4 +1,9 @@
-"""Executa clima -> dataset -> treino. Uso: python pipeline.py [--clima-sintetico] [--so-treino]"""
+"""Executa clima -> dataset -> treino. Uso: python scripts/pipeline.py [--clima-sintetico] [--so-treino]"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # raiz do projeto (config, hidrica)
+
 import argparse
 
 import pandas as pd

@@ -1,4 +1,4 @@
-"""Validação do formulário e geração da recomendação (spec.md, seção 9)."""
+"""Validação do formulário e geração da recomendação (docs/spec.md, seção 9)."""
 import base64
 import io
 from datetime import date

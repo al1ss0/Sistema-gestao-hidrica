@@ -1,4 +1,4 @@
-"""Constantes do projeto (ver spec.md, seções 2, 5 e 7)."""
+"""Constantes do projeto (ver docs/spec.md, seções 2, 5 e 7)."""
 from pathlib import Path
 
 LAT = -28.26
@@ -11,7 +11,7 @@ LOCAL_NOME = "Passo Fundo – RS"
 # último dia completo disponível na fonte (ver hidrica/clima.py).
 DATA_INICIO = "2010-01-01"
 
-# Parâmetros de referência do FAO-56 (spec.md, seção 5): a equipe deve conferi-los.
+# Parâmetros de referência do FAO-56 (docs/spec.md, seção 5): a equipe deve conferi-los.
 CULTURAS = {
     "milho": {"kc_ini": 0.30, "kc_mid": 1.20, "kc_end": 0.60, "estagios": (30, 40, 50, 30), "zr": 1.0, "p": 0.55},
     "soja": {"kc_ini": 0.40, "kc_mid": 1.15, "kc_end": 0.50, "estagios": (20, 30, 60, 25), "zr": 1.0, "p": 0.50},

@@ -63,7 +63,7 @@ def _limpar(df):
     if not completo.any():
         raise ValueError("A NASA POWER não retornou nenhum dia completo no período pedido.")
     df = df.loc[: completo[completo].index.max()].copy()
-    df["chuva"] = df["chuva"].fillna(0.0)  # lacuna interna de chuva = 0 (spec.md, seção 4)
+    df["chuva"] = df["chuva"].fillna(0.0)  # lacuna interna de chuva = 0 (docs/spec.md, seção 4)
     df = df.interpolate(method="linear", limit_area="inside")
     return df
 

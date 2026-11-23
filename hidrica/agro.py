@@ -1,4 +1,4 @@
-"""Cálculos agronômicos FAO-56 (spec.md, seção 6)."""
+"""Cálculos agronômicos FAO-56 (docs/spec.md, seção 6)."""
 import numpy as np
 
 import config

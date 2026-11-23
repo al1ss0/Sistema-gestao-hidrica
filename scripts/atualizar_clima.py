@@ -1,4 +1,9 @@
-"""Atualiza o clima com os dados mais recentes da NASA POWER. Uso: python atualizar_clima.py"""
+"""Atualiza o clima com os dados mais recentes da NASA POWER. Uso: python scripts/atualizar_clima.py"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # raiz do projeto (config, hidrica)
+
 from hidrica import clima
 
 

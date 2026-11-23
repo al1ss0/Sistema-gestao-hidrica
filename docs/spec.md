@@ -58,7 +58,7 @@ https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,
 
 O fim (`end`) é a data atual. A fonte tem defasagem de alguns dias e devolve `-999` para os dias ainda incompletos (a radiação é a última variável a ficar pronta). **Esses dias são descartados, nunca interpolados nem preenchidos**: a série termina no último dia em que todas as variáveis existem. Os dados da NASA POWER são estimativas de reanálise/modelagem e satélite, não medições de estação, e os valores recentes são provisórios.
 
-**Atualização:** `python atualizar_clima.py` (ou o botão da plataforma, ou automática ao iniciar o app, uma vez por dia) baixa só o trecho recente, repetindo os últimos 30 dias para receber revisões da fonte, e preserva o histórico. Os metadados ficam em `data/clima_meta.json` (fonte, tipo do dado, primeira e última data, momento da atualização).
+**Atualização:** `python scripts/atualizar_clima.py` (ou o botão da plataforma, ou automática ao iniciar o app, uma vez por dia) baixa só o trecho recente, repetindo os últimos 30 dias para receber revisões da fonte, e preserva o histórico. Os metadados ficam em `data/clima_meta.json` (fonte, tipo do dado, primeira e última data, momento da atualização).
 
 Arquivo `data/clima.csv`, uma linha por dia:
 
@@ -271,7 +271,7 @@ hidrica/agro.py           et0(), kc(), balanco(), classificar()
 hidrica/dataset.py        simular_cenario(), adicionar_features(), gerar_dataset()
 hidrica/modelo.py         treinar_e_avaliar(), carregar_modelo()
 hidrica/recomendacao.py   recomendar(entrada) usado pela interface
-pipeline.py               executa clima → dataset → treino
+scripts/pipeline.py       executa clima → dataset → treino
 app.py                    Flask
 templates/ e static/    páginas (base, início, análise, metodologia, sobre), CSS e JS
 tests/                    testes pytest
@@ -281,7 +281,7 @@ requirements.txt  .gitignore  README.md
 
 ## 11. Critérios de pronto
 
-- `python pipeline.py` gera `data/clima.csv`, `data/dataset.csv`, `models/modelo.joblib` e `reports/metricas.csv`.
+- `python scripts/pipeline.py` gera `data/clima.csv`, `data/dataset.csv`, `models/modelo.joblib` e `reports/metricas.csv`.
 - `pytest` passa 100%.
 - `python app.py` abre em http://127.0.0.1:5000. Um formulário válido mostra a recomendação, o gráfico e o aviso; um formulário inválido mostra o erro.
 - O README explica a instalação, a execução e as limitações da seção 3.

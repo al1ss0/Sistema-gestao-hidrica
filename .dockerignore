@@ -10,3 +10,4 @@ tests
 data/*.csv
 data/*.json
 data/*.txt
+docs

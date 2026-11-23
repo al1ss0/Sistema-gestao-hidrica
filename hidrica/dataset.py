@@ -1,4 +1,4 @@
-"""Simulação de safras, features e dataset rotulado (spec.md, seção 7)."""
+"""Simulação de safras, features e dataset rotulado (docs/spec.md, seção 7)."""
 import numpy as np
 import pandas as pd
 

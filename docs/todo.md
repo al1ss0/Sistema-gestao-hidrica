@@ -14,17 +14,17 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 1 — Ambiente
 
-- [ ] **1.1 Criar o ambiente virtual.**
+- [x] **1.1 Criar o ambiente virtual.**
   Rode `py -3.14 -m venv .venv`. Se der erro, rode `py -3.12 -m venv .venv`. Se ainda der erro, rode `uv venv --python 3.12 .venv`.
   *Verificação:* `.venv/Scripts/python --version` mostra 3.14 ou 3.12.
 
-- [ ] **1.2 Criar o `requirements.txt` e instalar as dependências.**
+- [x] **1.2 Criar o `requirements.txt` e instalar as dependências.**
   O arquivo deve ter uma linha para cada pacote: `pandas`, `numpy`, `scikit-learn`, `xgboost`, `joblib`, `matplotlib`, `flask`, `pytest`.
   Rode `.venv/Scripts/python -m pip install -r requirements.txt`. Se a instalação falhar no 3.14, apague `.venv` e repita a 1.1 com 3.12.
   Depois rode `.venv/Scripts/python -m pip freeze > requirements.txt` para fixar as versões.
   *Verificação:* `.venv/Scripts/python -c "import pandas, numpy, sklearn, xgboost, joblib, matplotlib, flask, pytest"` não mostra erro.
 
-- [ ] **1.3 Criar as pastas e o `.gitignore`.**
+- [x] **1.3 Criar as pastas e o `.gitignore`.**
   Crie as pastas `hidrica/`, `templates/`, `tests/`, `data/`, `models/` e `reports/`, cada uma com um arquivo `.gitkeep`.
   O `.gitignore` deve ter as linhas `.venv/`, `__pycache__/`, `.pytest_cache/`, `data/*.csv` e `models/*.joblib`.
   Crie `hidrica/__init__.py` vazio.
@@ -32,7 +32,7 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 2 — Configuração e cálculos agronômicos
 
-- [ ] **2.1 Criar `config.py`** com as constantes do spec.md:
+- [x] **2.1 Criar `config.py`** com as constantes do spec.md:
   - `LAT = -28.26`, `LON = -52.41`, `ALT = 687`.
   - `DATA_INICIO = "2010-01-01"`, `DATA_FIM = "2025-06-30"`.
   - `CULTURAS`: dicionário `{nome: {"kc_ini", "kc_mid", "kc_end", "estagios": (ini, dev, mid, late), "zr", "p"}}` com os valores da seção 5.
@@ -46,14 +46,14 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
   *Verificação:* `.venv/Scripts/python -c "import config; print(len(config.CULTURAS), len(config.SOLOS))"` imprime `3 3`.
 
-- [ ] **2.2 Criar `hidrica/agro.py`** com estas funções:
+- [x] **2.2 Criar `hidrica/agro.py`** com estas funções:
   - `et0(tmax, tmin, ur, vento, rad, lat, alt, doy)`: fórmula da seção 6, usando `numpy`. Deve funcionar com números e com arrays ou Series.
   - `duracao_ciclo(cultura) -> int`: soma dos 4 estágios.
   - `kc(cultura, d) -> float`: curva da seção 6.
   - `taw(cultura, solo) -> float` e `raw(cultura, solo) -> float`.
   - `classificar(dr, raw_mm, alpha=config.ALPHA) -> int`.
 
-- [ ] **2.3 Criar `tests/test_agro.py`** com estes testes:
+- [x] **2.3 Criar `tests/test_agro.py`** com estes testes:
   - O `et0` do exemplo da seção 6 (tmax 21,5; tmin 12,3; ur 70,56; vento 2,78; rad 22,07; lat 50,8; alt 100; doy 187) fica entre 3,8 e 4,0.
   - Para o milho: `kc("milho", 0) == 0.30`; `kc("milho", 70) == 1.20`; `kc("milho", 50)` está entre 0,30 e 1,20 (valor esperado: 0,75); `kc("milho", 149)` está próximo de 0,60 (tolerância 0,05).
   - `taw("milho", "médio") == 130.0` (com tolerância de 1e-6).
@@ -63,16 +63,16 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 3 — Clima
 
-- [ ] **3.1 Criar `hidrica/clima.py`** com estas funções:
+- [x] **3.1 Criar `hidrica/clima.py`** com estas funções:
   - `baixar_nasa_power() -> pd.DataFrame`: faz um GET na URL da seção 4 com `urllib.request`, com timeout de 120 s, e lê `["properties"]["parameter"]`. Monta as colunas da seção 4, troca −999 por NaN, interpola as colunas numéricas (a chuva com NaN vira 0) e lança uma exceção se vier vazio.
   - `gerar_clima_sintetico(inicio=config.DATA_INICIO, fim=config.DATA_FIM, seed=config.SEED) -> pd.DataFrame`: fórmulas da seção 4, com as mesmas colunas.
   - `adicionar_et0(df) -> pd.DataFrame`: cria a coluna `et0` usando `agro.et0` com `config.LAT`, `config.ALT` e o `doy` da data.
   - `preparar_clima(sintetico=False) -> pd.DataFrame`: baixa os dados (ou gera os sintéticos se `sintetico=True` ou se o download falhar, imprimindo `"AVISO: usando clima sintético"`), adiciona o `et0`, salva `data/clima.csv` e grava em `data/fonte_clima.txt` a palavra `nasa_power` ou `sintetico`.
   - `carregar_clima() -> pd.DataFrame`: lê `data/clima.csv`, com `data` como datetime e índice.
 
-- [ ] **3.2 Criar `tests/conftest.py`** com uma fixture `clima` (escopo `session`) que retorna `adicionar_et0(gerar_clima_sintetico())` indexado por `data`. Nenhum teste pode depender da internet.
+- [x] **3.2 Criar `tests/conftest.py`** com uma fixture `clima` (escopo `session`) que retorna `adicionar_et0(gerar_clima_sintetico())` indexado por `data`. Nenhum teste pode depender da internet.
 
-- [ ] **3.3 Criar `tests/test_clima.py`** com estes testes:
+- [x] **3.3 Criar `tests/test_clima.py`** com estes testes:
   - O clima sintético tem as 7 colunas da seção 4 e nenhum NaN.
   - `ur` fica entre 30 e 100, e `chuva` é sempre ≥ 0.
   - O `et0` é > 0 em todas as linhas.
@@ -82,7 +82,7 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 4 — Simulação e dataset
 
-- [ ] **4.1 Criar `hidrica/dataset.py`** com:
+- [x] **4.1 Criar `hidrica/dataset.py`** com:
   - Constantes:
     - `CATEGORICAS = ["cultura", "solo"]`;
     - `NUMERICAS` = as features numéricas da seção 7;
@@ -101,7 +101,7 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
     - Salva `data/dataset.csv` e retorna o DataFrame.
   - `dividir(df) -> (treino, validacao, teste)`: separa por `ano`, conforme a seção 7.
 
-- [ ] **4.2 Criar `tests/test_dataset.py`** usando a fixture `clima`:
+- [x] **4.2 Criar `tests/test_dataset.py`** usando a fixture `clima`:
   - Em um cenário `milho/arenoso/2015-10-01/irrigado`, `dr` fica sempre entre 0 e `taw`.
   - Um cenário `sequeiro` tem `irrigacao == 0` em todas as linhas.
   - O número de linhas de um cenário é igual a `duracao_ciclo`.
@@ -113,7 +113,7 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 5 — Modelos
 
-- [ ] **5.1 Criar `hidrica/modelo.py`** com:
+- [x] **5.1 Criar `hidrica/modelo.py`** com:
   - `criar_pipeline(estimador) -> Pipeline`: monta o pré-processamento da seção 8.
   - `treinar_e_avaliar(df, pasta_saida=config.RAIZ, rapido=False) -> dict`:
     1. Divide os dados com `dividir`.
@@ -128,7 +128,7 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
     Com `rapido=True`, usa 3.000 linhas amostradas do treino (seed 42) e só o primeiro valor de cada grade (para os testes). A amostra deve ser estratificada por `classe` (por exemplo, com `train_test_split(..., train_size=3000, stratify=treino["classe"], random_state=42)`), porque o XGBoost falha se faltar alguma das classes 0, 1 ou 2.
   - `carregar_modelo(pasta=config.RAIZ) -> (pipeline, metadata)`.
 
-- [ ] **5.2 Criar `tests/test_modelo.py`**, com uma fixture de escopo `session` que roda `gerar_dataset(clima)` e `treinar_e_avaliar(df, tmp_path_factory.mktemp("saida"), rapido=True)`:
+- [x] **5.2 Criar `tests/test_modelo.py`**, com uma fixture de escopo `session` que roda `gerar_dataset(clima)` e `treinar_e_avaliar(df, tmp_path_factory.mktemp("saida"), rapido=True)`:
   - `metricas.csv` tem 5 linhas (RegressaoLogistica, RandomForest, XGBoost, MLP, Dummy).
   - `metadata.json` tem as chaves `modelo`, `hiperparametros`, `features`, `metricas` e `data`.
   - O modelo carregado retorna em `predict_proba` 3 probabilidades por linha, que somam 1 (tolerância 1e-6).
@@ -140,21 +140,21 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 6 — Pipeline completo
 
-- [ ] **6.1 Criar `pipeline.py`**, que aceita o argumento opcional `--clima-sintetico` e executa: `preparar_clima(sintetico)` → `gerar_dataset` → `treinar_e_avaliar`. Ao final, imprime `reports/selecao.txt`.
+- [x] **6.1 Criar `pipeline.py`**, que aceita o argumento opcional `--clima-sintetico` e executa: `preparar_clima(sintetico)` → `gerar_dataset` → `treinar_e_avaliar`. Ao final, imprime `reports/selecao.txt`.
 
-- [ ] **6.2 Rodar `.venv/Scripts/python pipeline.py`.**
+- [x] **6.2 Rodar `.venv/Scripts/python scripts/pipeline.py`.**
   *Verificação:* existem `data/clima.csv`, `data/dataset.csv`, `models/modelo.joblib`, `models/metadata.json`, `reports/metricas.csv` e `reports/selecao.txt`. Leia `data/fonte_clima.txt` e informe se o clima é `nasa_power` ou `sintetico`. Copie o conteúdo de `reports/metricas.csv` para o relatório final da execução, **sem** alterar os números.
 
 ## Fase 7 — Serviço de recomendação
 
-- [ ] **7.1 Criar `hidrica/recomendacao.py`** com:
+- [x] **7.1 Criar `hidrica/recomendacao.py`** com:
   - `validar(form: dict, clima) -> (entrada: dict | None, erros: list[str])`: aplica as regras da seção 9, com mensagens em português, por exemplo `"A data da análise deve ser posterior à semeadura."`.
   - `recomendar(entrada, clima, modelo, metadata) -> dict`:
     1. Roda `simular_cenario(..., politica="manual", irrigacoes={data_irrigacao: lamina} ou {}, data_fim=data_analise)` e depois `adicionar_features`. Pega a última linha.
     2. Faz `modelo.predict_proba(linha[metadata["features"]])`.
     3. Retorna `classe_modelo`, `texto_modelo`, `probabilidades` (dict texto → %), `classe_referencia`, `texto_referencia`, `divergente`, `dr`, `raw`, `lamina` (`None` na classe 0), `grafico` (PNG em base64, gerado com matplotlib usando o backend `"Agg"`, conforme a seção 9, item 4) e `aviso = config.AVISO`.
 
-- [ ] **7.2 Criar `tests/test_recomendacao.py`** (usando o modelo da fixture de `test_modelo.py`; se preciso, mova a fixture para `conftest.py`):
+- [x] **7.2 Criar `tests/test_recomendacao.py`** (usando o modelo da fixture de `test_modelo.py`; se preciso, mova a fixture para `conftest.py`):
   - Um formulário sem data de semeadura gera um erro.
   - Uma data de análise anterior à semeadura gera um erro.
   - Uma data de irrigação informada sem lâmina gera um erro.
@@ -164,21 +164,21 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 8 — Interface Flask
 
-- [ ] **8.1 Criar `app.py`** com `create_app(pasta=config.RAIZ, clima=None)`:
+- [x] **8.1 Criar `app.py`** com `create_app(pasta=config.RAIZ, clima=None)`:
   - Carrega o clima (de `carregar_clima()`, se não for passado) e o modelo uma única vez.
   - Rota `/` (GET e POST): chama `validar` e, se não houver erros, `recomendar`, e renderiza `index.html`.
-  - Se o modelo não existir, a página mostra `"Modelo não encontrado. Execute: python pipeline.py"`.
+  - Se o modelo não existir, a página mostra `"Modelo não encontrado. Execute: python scripts/pipeline.py"`.
   - Ao final do arquivo: `if __name__ == "__main__": create_app().run(host="127.0.0.1", port=5000, debug=False)`.
   - Nenhum cálculo pode ser feito dentro de `app.py`; ele só chama `hidrica.recomendacao`.
 
-- [ ] **8.2 Criar `templates/index.html`**:
+- [x] **8.2 Criar `templates/index.html`**:
   - Formulário com os campos da seção 9, mantendo os valores digitados depois do envio.
   - Lista de erros em vermelho.
   - Bloco de resultado com os itens 1 a 6 da seção 9, nessa ordem.
   - Gráfico como `<img src="data:image/png;base64,...">`.
   - CSS simples dentro de `<style>`, sem bibliotecas externas e sem JavaScript.
 
-- [ ] **8.3 Criar `tests/test_app.py`** (com o Flask test client, o modelo da fixture e o clima sintético):
+- [x] **8.3 Criar `tests/test_app.py`** (com o Flask test client, o modelo da fixture e o clima sintético):
   - GET `/` → status 200 e contém `<form`.
   - POST inválido (sem datas) → 200 e contém a mensagem de erro.
   - POST válido (o caso da 7.2) → 200 e contém `"Recomendação de suporte à decisão"`, `data:image/png;base64` e um dos 3 textos de classe.
@@ -186,7 +186,7 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
   *Verificação:* `.venv/Scripts/python -m pytest tests/test_app.py` passa.
 
-- [ ] **8.4 Teste manual da aplicação real.**
+- [x] **8.4 Teste manual da aplicação real.**
   1. Rode `.venv/Scripts/python app.py` em segundo plano.
   2. Com `curl`, faça um GET em `http://127.0.0.1:5000/` e confirme o status 200.
   3. Faça um POST com o caso da 7.2 e confirme que a resposta contém um texto de classe.
@@ -194,17 +194,17 @@ Siga as tarefas **na ordem**. Todos os valores, fórmulas e nomes estão em [spe
 
 ## Fase 9 — Documentação e verificação final
 
-- [ ] **9.1 Escrever o `README.md`** com:
+- [x] **9.1 Escrever o `README.md`** com:
   - o título do projeto;
   - o que o sistema faz (resumo da seção 1 do spec);
   - a instalação (comandos da fase 1);
-  - como gerar o modelo (`python pipeline.py` e a opção `--clima-sintetico`);
+  - como gerar o modelo (`python scripts/pipeline.py` e a opção `--clima-sintetico`);
   - como abrir a aplicação (`python app.py` → http://127.0.0.1:5000);
   - como rodar os testes (`python -m pytest`);
   - a tabela de `reports/metricas.csv` copiada sem alterar os números;
   - as **Limitações**: o texto da seção 3 do spec, mais o aviso de que os parâmetros da seção 5 precisam ser conferidos pela equipe.
 
-- [ ] **9.2 Verificação final.**
+- [x] **9.2 Verificação final.**
   1. Rode `.venv/Scripts/python -m pytest` e confirme que 100% dos testes passam.
   2. Confira cada item da seção 11 do spec.md.
   3. Informe como resultado:

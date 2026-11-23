@@ -2,7 +2,7 @@
 
 Protótipo acadêmico que informa ao produtor rural se ele precisa irrigar. O usuário informa cultura, solo, data de semeadura, data da análise e (opcionalmente) a última irrigação. O sistema usa o clima da localidade (Passo Fundo – RS) e responde com uma de três classes: *Sem necessidade de irrigação*, *Atenção: irrigação em breve* ou *Irrigação recomendada*.
 
-O sistema **apenas recomenda**: não controla equipamentos, não usa sensores e não garante economia de água. Detalhes em [spec.md](spec.md).
+O sistema **apenas recomenda**: não controla equipamentos, não usa sensores e não garante economia de água. Detalhes em [docs/spec.md](docs/spec.md).
 
 ## Instalação
 
@@ -18,14 +18,14 @@ py -3.14 -m venv .venv
 ## Gerar o modelo
 
 ```
-.venv\Scripts\python pipeline.py
+.venv\Scripts\python scripts/pipeline.py
 ```
 
-Baixa o clima diário da NASA POWER (de 2010-01-01 até o último dia completo disponível), simula as safras, gera o dataset e treina e compara os modelos. Leva cerca de 3 minutos. Sem internet, use `python pipeline.py --clima-sintetico` (clima gerado artificialmente; o arquivo `data/fonte_clima.txt` registra qual fonte foi usada).
+Baixa o clima diário da NASA POWER (de 2010-01-01 até o último dia completo disponível), simula as safras, gera o dataset e treina e compara os modelos. Leva cerca de 3 minutos. Sem internet, use `python scripts/pipeline.py --clima-sintetico` (clima gerado artificialmente; o arquivo `data/fonte_clima.txt` registra qual fonte foi usada).
 
 Saídas: `data/clima.csv`, `data/clima_meta.json`, `data/dataset.csv`, `models/modelo.joblib`, `models/metadata.json` (inclui a calibração conforme), `reports/metricas.csv`, `reports/conformal.csv`, `reports/selecao.txt`.
 
-`python pipeline.py --so-treino` reaproveita o `data/dataset.csv` existente e só retreina e recalibra (não baixa o clima nem refaz o dataset).
+`python scripts/pipeline.py --so-treino` reaproveita o `data/dataset.csv` existente e só retreina e recalibra (não baixa o clima nem refaz o dataset).
 
 ## Abrir a aplicação
 
@@ -52,14 +52,14 @@ Para cada análise o clima do período (da semeadura à data da análise) é bus
 Não há data máxima fixa. A análise pode usar qualquer data desde 2010-01-01 até o **último dia completo** disponível na fonte, sem passar de hoje. O padrão do campo "data da análise" é esse último dia, e o rodapé de todas as páginas mostra até quando o clima vai e quando foi atualizado.
 
 - **Atualização automática:** ao iniciar o app, uma vez por dia, se houver internet.
-- **Atualização manual:** botão "Atualizar dados climáticos agora" na plataforma, ou `python atualizar_clima.py`. A atualização é incremental: baixa só o trecho recente (repetindo os últimos 30 dias, porque a fonte pode revisar valores) e preserva o histórico.
+- **Atualização manual:** botão "Atualizar dados climáticos agora" na plataforma, ou `python scripts/atualizar_clima.py`. A atualização é incremental: baixa só o trecho recente (repetindo os últimos 30 dias, porque a fonte pode revisar valores) e preserva o histórico.
 - **Defasagem:** a NASA POWER tem alguns dias de atraso, e a radiação solar é a última variável a ficar pronta. Dias ainda incompletos são **descartados, nunca preenchidos**.
 - **Natureza do dado:** a NASA POWER fornece estimativas de reanálise/modelagem e satélite, não medições de estação meteorológica, e não são previsões do tempo. Valores recentes são provisórios.
-- Os modelos foram treinados com safras de 2010 a 2024. Atualizar o clima não retreina o modelo; para incluir safras mais novas no treino, altere `config.py` (`ANOS_SEMEADURA` e a divisão por anos) e rode `python pipeline.py`.
+- Os modelos foram treinados com safras de 2010 a 2024. Atualizar o clima não retreina o modelo; para incluir safras mais novas no treino, altere `config.py` (`ANOS_SEMEADURA` e a divisão por anos) e rode `python scripts/pipeline.py`.
 
 ## Publicação na internet
 
-O sistema é uma única aplicação Flask que serve a interface e a API. O repositório já traz `Dockerfile`, `render.yaml` (hospedagem no Render), `wsgi.py` (gunicorn) e um workflow de testes do GitHub Actions. O passo a passo está em [DEPLOY.md](DEPLOY.md). O GitHub Pages não serve para este projeto, porque ele só hospeda páginas estáticas e não executa Python.
+O sistema é uma única aplicação Flask que serve a interface e a API. O repositório já traz `Dockerfile`, `render.yaml` (hospedagem no Render), `wsgi.py` (gunicorn) e um workflow de testes do GitHub Actions. O passo a passo está em [docs/DEPLOY.md](docs/DEPLOY.md). O GitHub Pages não serve para este projeto, porque ele só hospeda páginas estáticas e não executa Python.
 
 ## Testes
 
@@ -102,7 +102,7 @@ O método usado cobriu **93.5%** dos casos (meta 90%), com conjuntos de **1.14**
 
 - **Os rótulos são simulados.** Não existem dados reais rotulados de "precisa irrigar". Os rótulos vêm de um balanço hídrico do solo (método FAO-56) aplicado a clima real e a safras simuladas. O modelo aprende a reproduzir esse cálculo a partir de um resumo do clima recente, da cultura, do solo e da última irrigação.
 - **Métrica alta não é validade agronômica.** F1 e acurácia medem a concordância com a simulação, não o acerto de uma decisão de irrigação em campo. Não foi feita validação em campo.
-- **Parâmetros a conferir.** Os valores de Kc, estágios, profundidade de raiz, fator p e umidade do solo (spec.md, seção 5) são valores de referência do FAO-56 e precisam ser conferidos pela equipe. O limiar da classe "Atenção" (metade do RAW) é uma escolha de produto, não um valor agronômico.
+- **Parâmetros a conferir.** Os valores de Kc, estágios, profundidade de raiz, fator p e umidade do solo (docs/spec.md, seção 5) são valores de referência do FAO-56 e precisam ser conferidos pela equipe. O limiar da classe "Atenção" (metade do RAW) é uma escolha de produto, não um valor agronômico.
 - O balanço assume solo na capacidade de campo na semeadura, precipitação efetiva igual à total e sem ascensão capilar.
 - Três culturas (milho, soja, feijão) e três classes de solo. O modelo foi treinado com um único ponto de clima; fora dele o resultado principal é o cálculo de referência (ver "Localização da propriedade").
 - O clima é de reanálise/satélite para um ponto, com defasagem de alguns dias; não é medição na propriedade.

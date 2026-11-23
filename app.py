@@ -1,4 +1,4 @@
-"""Interface Flask. Local: python app.py. Produção: gunicorn wsgi:app (ver DEPLOY.md)."""
+"""Interface Flask. Local: python app.py. Produção: gunicorn wsgi:app (ver docs/DEPLOY.md)."""
 import os
 import threading
 import time
@@ -17,7 +17,7 @@ from hidrica import localidade as mod_local
 from hidrica import modelo as mod_modelo
 from hidrica import recomendacao
 
-MSG_SEM_MODELO = "Modelo não encontrado. Execute: python pipeline.py"
+MSG_SEM_MODELO = "Modelo não encontrado. Execute: python scripts/pipeline.py"
 MSG_FONTE_INDISPONIVEL = (
     "Não foi possível obter os dados climáticos desta localidade agora (fonte indisponível). "
     "Tente novamente em instantes."

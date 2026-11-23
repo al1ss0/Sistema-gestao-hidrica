@@ -92,7 +92,7 @@ O limite por IP e o cache existem para que um uso excessivo, ou um abuso, não e
 
 ## Atualizar o modelo ou os dados
 
-1. Localmente: `python pipeline.py` (retreina com o clima mais recente).
+1. Localmente: `python scripts/pipeline.py` (retreina com o clima mais recente).
 2. Confira `reports/metricas.csv` e `reports/selecao.txt`.
 3. Faça commit de `models/modelo.joblib`, `models/metadata.json` (traz o limiar conforme), `reports/metricas.csv` e `reports/conformal.csv` e dê `push`: a hospedagem faz o deploy sozinha.
 

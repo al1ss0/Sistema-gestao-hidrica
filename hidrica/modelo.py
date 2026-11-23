@@ -1,4 +1,4 @@
-"""Treino, comparação e seleção de modelos (spec.md, seção 8)."""
+"""Treino, comparação e seleção de modelos (docs/spec.md, seção 8)."""
 import json
 from datetime import datetime
 from pathlib import Path

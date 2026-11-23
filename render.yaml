@@ -1,5 +1,5 @@
 # Blueprint do Render (https://render.com): cria o serviço web a partir deste repositório.
-# Passo a passo em DEPLOY.md.
+# Passo a passo em docs/DEPLOY.md.
 services:
   - type: web
     name: hidrodecisao
