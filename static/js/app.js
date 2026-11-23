@@ -74,3 +74,17 @@
     }, 300);
   });
 })();
+
+// Menu do celular: o botão "Menu" abre e fecha a lista de páginas. Sem este script, o menu fica sempre aberto.
+(function () {
+  document.documentElement.classList.add("js");
+  var topo = document.querySelector(".topo");
+  var botao = document.querySelector(".menu-botao");
+  if (!topo || !botao) return;
+  function alternar(abrir) {
+    topo.classList.toggle("aberto", abrir);
+    botao.setAttribute("aria-expanded", abrir ? "true" : "false");
+  }
+  botao.addEventListener("click", function () { alternar(!topo.classList.contains("aberto")); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") alternar(false); });
+})();

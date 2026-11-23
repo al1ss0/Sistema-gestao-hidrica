@@ -515,3 +515,36 @@ html { scroll-padding-top: 6.5rem; }
   .topo .btn-pilula { display: none; }
   .marca small { display: none; }
 }
+
+/* ----- Menu do celular: barra compacta com botão "Menu" ----- */
+.menu-botao { display: none; }
+@media (max-width: 760px) {
+  .topo { margin-bottom: 0; }
+  .topo .container { flex-direction: row; flex-wrap: wrap; align-items: center; border-radius: 26px; padding: .5rem .5rem .5rem .6rem; gap: 0; }
+  .marca { flex: 1; padding-left: 0; gap: .55rem; font-size: 1.05rem; }
+  .marca small { display: none; }
+  .marca-icone { width: 2.3rem; height: 2.3rem; }
+  .menu-botao { display: inline-flex; align-items: center; gap: .5rem; font: inherit; font-weight: 700; font-size: .98rem; color: #fff;
+    background: var(--verde-900); border: 0; border-radius: 999px; padding: .6rem 1rem .6rem .85rem; cursor: pointer; }
+  .menu-botao-icone, .menu-botao-icone::before, .menu-botao-icone::after { display: block; width: 18px; height: 2px; border-radius: 2px; background: #fff;
+    transition: transform .25s ease, opacity .2s ease; }
+  .menu-botao-icone { position: relative; }
+  .menu-botao-icone::before, .menu-botao-icone::after { content: ""; position: absolute; left: 0; }
+  .menu-botao-icone::before { top: -6px; }
+  .menu-botao-icone::after { top: 6px; }
+  .topo.aberto .menu-botao-icone { background: transparent; }
+  .topo.aberto .menu-botao-icone::before { transform: translateY(6px) rotate(45deg); }
+  .topo.aberto .menu-botao-icone::after { transform: translateY(-6px) rotate(-45deg); }
+
+  .menu { flex-basis: 100%; flex-direction: column; gap: .25rem; padding: .7rem .1rem .3rem; margin-top: .5rem; border-top: 1px solid var(--borda); }
+  .js .menu { display: none; }
+  .js .topo.aberto .menu { display: flex; }
+  .menu a { font-size: 1.08rem; padding: .85rem 1rem; border-radius: 14px; }
+  .menu a[aria-current="page"], .menu a[aria-current="page"]:hover { background: var(--verde-100); color: var(--verde-900); box-shadow: none; border-radius: 14px; }
+  .topo .btn-pilula { display: none; }
+  .js .topo.aberto .btn-pilula { display: flex; flex-basis: 100%; justify-content: space-between; margin: .3rem .1rem .3rem; }
+
+  .capa { padding-block: 7.5rem 3rem; }
+  .capa-pagina, .capa-pagina.simples { padding-block: 7rem 2.4rem; }
+}
+@media (prefers-reduced-motion: reduce) { .menu-botao-icone, .menu-botao-icone::before, .menu-botao-icone::after { transition: none; } }

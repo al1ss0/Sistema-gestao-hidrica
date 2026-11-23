@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% block titulo %}HidroDecisão{% endblock %} · Gestão hídrica em propriedades rurais</title>
+<title>HidroDecisão</title>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='img/favicon.svg') }}">
+<meta name="theme-color" content="#0f3b27">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="pg-{{ pagina or 'outra' }}">
@@ -16,7 +18,10 @@
       </svg></span>
       <span>HidroDecisão<small>Gestão hídrica em propriedades rurais</small></span>
     </a>
-    <nav class="menu" aria-label="Navegação principal">
+    <button class="menu-botao" type="button" aria-expanded="false" aria-controls="menu-principal">
+      <span class="menu-botao-icone" aria-hidden="true"></span><span class="menu-botao-texto">Menu</span>
+    </button>
+    <nav class="menu" id="menu-principal" aria-label="Navegação principal">
       <a href="{{ url_for('inicio') }}" {% if pagina == 'inicio' %}aria-current="page"{% endif %}>Início</a>
       <a href="{{ url_for('analise') }}" {% if pagina == 'analise' %}aria-current="page"{% endif %}>Plataforma de análise</a>
       <a href="{{ url_for('metodologia') }}" {% if pagina == 'metodologia' %}aria-current="page"{% endif %}>Metodologia</a>
