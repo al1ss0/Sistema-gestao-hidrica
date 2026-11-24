@@ -88,3 +88,11 @@
   botao.addEventListener("click", function () { alternar(!topo.classList.contains("aberto")); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") alternar(false); });
 })();
+
+// Formulário com erro: leva a tela até o aviso e coloca o foco nele (leitores de tela leem o aviso na hora).
+(function () {
+  var aviso = document.querySelector(".erros-form");
+  if (!aviso) return;
+  aviso.scrollIntoView({ block: "center" });
+  aviso.focus({ preventScroll: true });
+})();

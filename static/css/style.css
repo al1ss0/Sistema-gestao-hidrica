@@ -548,3 +548,14 @@ html { scroll-padding-top: 6.5rem; }
   .capa-pagina, .capa-pagina.simples { padding-block: 7rem 2.4rem; }
 }
 @media (prefers-reduced-motion: reduce) { .menu-botao-icone, .menu-botao-icone::before, .menu-botao-icone::after { transition: none; } }
+
+/* Aviso de erro do formulário: grande e impossível de não ver */
+.erros-form { display: flex; gap: 1rem; align-items: flex-start; border: 2px solid #d9827a; border-left: 10px solid var(--alerta); border-radius: 18px;
+  padding: 1.1rem 1.3rem; font-size: 1.08rem; box-shadow: 0 10px 26px rgba(179, 38, 30, .15); margin-bottom: 1.4rem; scroll-margin-top: 7rem;
+  animation: chama-atencao .6s ease-out; }
+.erros-form:focus { outline: 3px solid #f2b8b2; outline-offset: 3px; }
+.erros-form strong { font-size: 1.15rem; }
+.erros-form li { margin-top: .3rem; }
+.erros-icone { flex: none; width: 2.2rem; height: 2.2rem; fill: none; stroke: var(--alerta); stroke-width: 2.2; stroke-linecap: round; }
+@keyframes chama-atencao { 0% { transform: translateY(-6px); opacity: 0; } 60% { transform: translateY(2px); opacity: 1; } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .erros-form { animation: none; } }

@@ -36,8 +36,11 @@
       <div class="erros" role="alert">{{ aviso_modelo }}</div>
     {% endif %}
     {% if erros %}
-      <div class="erros" role="alert"><strong>Corrija os campos abaixo para continuar:</strong>
-        <ul>{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul>
+      {# Com erro, a âncora #resultado (para onde o formulário leva a tela) fica neste aviso, e não no espaço vazio do resultado. #}
+      <div class="erros erros-form" id="{{ 'resultado' if not res else 'erros' }}" role="alert" tabindex="-1">
+        <svg class="erros-icone" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v6M12 16.5v.5"/></svg>
+        <div><strong>Falta corrigir {{ 'um campo' if erros|length == 1 else erros|length ~ ' campos' }} para fazer a análise:</strong>
+        <ul>{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul></div>
       </div>
     {% endif %}
 
@@ -165,7 +168,7 @@
     </form>
     {% endif %}
 
-    <div id="resultado" style="margin-top:2rem">
+    <div {% if not erros or res %}id="resultado" {% endif %}style="margin-top:2rem">
     {% if res %}
       <h2>Resultado da análise</h2>
       <p class="muted">{{ res.entrada.cultura|capitalize }} em solo {{ res.entrada.solo }} · {{ res.local.nome }} · semeadura em
