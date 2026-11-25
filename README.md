@@ -1,108 +1,200 @@
-# Sistema Inteligente de Suporte à Decisão para Gestão Hídrica em Propriedades Rurais
+<div align="center">
 
-Protótipo acadêmico que informa ao produtor rural se ele precisa irrigar. O usuário informa cultura, solo, data de semeadura, data da análise e (opcionalmente) a última irrigação. O sistema usa o clima da localidade (Passo Fundo – RS) e responde com uma de três classes: *Sem necessidade de irrigação*, *Atenção: irrigação em breve* ou *Irrigação recomendada*.
+<img src="static/img/favicon.svg" width="88" alt="Logo do HidroDecisão: uma gota verde">
 
-O sistema **apenas recomenda**: não controla equipamentos, não usa sensores e não garante economia de água. Detalhes em [docs/spec.md](docs/spec.md).
+# HidroDecisão
 
-## Instalação
+**Sistema inteligente de suporte à decisão para gestão hídrica em propriedades rurais**
 
+Diz ao produtor se é hora de irrigar a lavoura, usando o clima do lugar, o solo e a cultura.
+
+[![Acessar o site](https://img.shields.io/badge/site-hidrodecisao.onrender.com-3f9b4f?style=for-the-badge)](https://hidrodecisao.onrender.com)
+[![Testes](https://github.com/al1ss0/Sistema-gestao-hidrica/actions/workflows/ci.yml/badge.svg)](https://github.com/al1ss0/Sistema-gestao-hidrica/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.14-1e5f8c)
+![Flask](https://img.shields.io/badge/Flask-3-0f3b27)
+![XGBoost](https://img.shields.io/badge/modelo-XGBoost-2f7d3d)
+
+<img src="static/img/fotos/topo-lavoura.jpg" width="100%" alt="Fileiras de lavoura verde até o horizonte">
+
+</div>
+
+---
+
+## 📌 Sobre o projeto
+
+Em muitas propriedades, a decisão de irrigar ainda é tomada "no olho": pelo calendário, pela aparência da planta ou pela experiência. Irrigar demais desperdiça água e energia; irrigar de menos derruba a produtividade. E a irrigação responde por uma parcela significativa das demandas de uso da água no Brasil (ANA, 2021).
+
+O **HidroDecisão** é um protótipo acadêmico de **baixo custo**: não precisa de sensores nem de equipamentos, só de **dados públicos de clima**. O produtor informa a cultura, o solo e as datas, escolhe onde fica a propriedade, e recebe uma de três respostas:
+
+| | Resposta | O que significa |
+|---|---|---|
+| 🟢 | **Sem necessidade de irrigação** | O solo ainda tem água suficiente |
+| 🟡 | **Atenção: irrigação em breve** | A água está acabando; planeje a irrigação |
+| 🔴 | **Irrigação recomendada** | A planta está entrando em estresse hídrico |
+
+Junto com a resposta, o site mostra **quantos milímetros irrigar** e avisa se o resultado é **confiável** ou **incerto**.
+
+> O sistema **apenas recomenda**: não controla equipamentos e não garante economia de água. A decisão continua sendo do produtor.
+
+**🌐 Teste agora:** https://hidrodecisao.onrender.com
+<sub>No plano gratuito do Render o site "dorme" quando ninguém usa; a primeira visita pode levar cerca de 1 minuto.</sub>
+
+---
+
+## ⚙️ Como funciona
+
+```mermaid
+flowchart LR
+    A["📍 Local da propriedade<br/>(município ou coordenadas)"] --> B["☁️ Clima diário<br/>NASA POWER"]
+    B --> C["💧 Balanço de água no solo<br/>método FAO-56"]
+    C --> D["🤖 Modelo de IA<br/>XGBoost"]
+    D --> E["✅ Recomendação<br/>+ grau de confiança"]
 ```
+
+1. **Clima do lugar.** Para o ponto escolhido, o sistema busca chuva, temperatura, umidade, vento e radiação de cada dia na [NASA POWER](https://power.larc.nasa.gov/). A localização de municípios e a altitude vêm do [Open-Meteo](https://open-meteo.com/).
+2. **Balanço de água (FAO-56).** O solo funciona como uma caixa d'água: chuva e irrigação enchem, a planta consome. Dia a dia desde a semeadura, o método [FAO-56](https://www.fao.org/4/x0490e/x0490e00.htm) calcula quanto falta para o solo ficar cheio (o *déficit*).
+3. **Modelo de IA.** Um classificador XGBoost, treinado com 675 safras simuladas, classifica a necessidade de irrigação a partir do clima recente, da cultura, do solo e da última irrigação.
+4. **Recomendação.** O site mostra a resposta em linguagem simples, com letras grandes, pensando em usuários mais velhos. Os detalhes técnicos ficam guardados em botões, para quem quiser conferir.
+
+O modelo foi treinado com o clima de **Passo Fundo – RS**. Em outras regiões (a mais de 50 km) ou em datas de junho a setembro, o resultado principal passa a ser o **cálculo FAO-56**, que vale em qualquer lugar, e o site avisa isso na tela.
+
+---
+
+## 📊 Resultados
+
+**Dados de treino:** 675 safras simuladas (15 anos × 5 datas de semeadura × 3 culturas × 3 solos), com clima real de Passo Fundo de 2010 a 2024, somando 52.650 dias rotulados pelo FAO-56. A divisão é **por ano**, para testar em anos que o modelo nunca viu:
+
+| Treino | Validação e calibração | Teste |
+|:---:|:---:|:---:|
+| 2010–2019 | 2020–2021 | 2022–2024 |
+
+**Comparação de modelos** (F1-macro no teste; 1 = perfeito):
+
+| Modelo | F1-macro | Acurácia balanceada |
+|---|:---:|:---:|
+| **XGBoost (escolhido)** | **0,864** | **0,858** |
+| Random Forest | 0,850 | 0,849 |
+| Rede neural (MLP) | 0,840 | 0,832 |
+| Regressão logística | 0,741 | 0,749 |
+| Chute fixo (Dummy) | 0,227 | 0,333 |
+
+O modelo foi escolhido pela validação, sem olhar o teste. Tabela completa em [`reports/metricas.csv`](reports/metricas.csv).
+
+**Intervalos de predição (predição conformal, 90% de confiança):** em vez de uma resposta só, o modelo devolve o conjunto de respostas possíveis. No teste, a resposta certa ficou dentro do conjunto em **93,5%** dos casos (meta: 90%), e **86%** dos resultados saíram com uma resposta só ("Resultado confiável"). Detalhes em [`reports/conformal.csv`](reports/conformal.csv) e na página **Metodologia** do site.
+
+---
+
+## 🧰 Tecnologias
+
+| Camada | Ferramentas |
+|---|---|
+| Site | Flask, Jinja2, HTML, CSS e JavaScript puro |
+| Dados e cálculos | pandas, NumPy, método FAO-56 (Penman-Monteith) |
+| Machine Learning | scikit-learn, XGBoost, predição conformal própria (`hidrica/conformal.py`) |
+| Gráficos | Matplotlib |
+| Hospedagem | Docker, gunicorn, Render; testes no GitHub Actions |
+| Fontes de dados | NASA POWER (clima), Open-Meteo (municípios e altitude) |
+
+---
+
+## 🚀 Como rodar no seu computador
+
+Pré-requisito: **Python 3.14** (se alguma biblioteca não instalar, use o 3.12).
+
+```bash
+# 1. Criar o ambiente e instalar as dependências
 py -3.14 -m venv .venv
 .venv\Scripts\python -m pip install -r requirements-dev.txt
-```
 
-`requirements.txt` tem só o necessário para rodar (é o que a hospedagem instala); `requirements-dev.txt` acrescenta o pytest.
-
-(Testado com Python 3.14.3. Se alguma biblioteca não instalar, use `py -3.12`.)
-
-## Gerar o modelo
-
-```
-.venv\Scripts\python scripts/pipeline.py
-```
-
-Baixa o clima diário da NASA POWER (de 2010-01-01 até o último dia completo disponível), simula as safras, gera o dataset e treina e compara os modelos. Leva cerca de 3 minutos. Sem internet, use `python scripts/pipeline.py --clima-sintetico` (clima gerado artificialmente; o arquivo `data/fonte_clima.txt` registra qual fonte foi usada).
-
-Saídas: `data/clima.csv`, `data/clima_meta.json`, `data/dataset.csv`, `models/modelo.joblib`, `models/metadata.json` (inclui a calibração conforme), `reports/metricas.csv`, `reports/conformal.csv`, `reports/selecao.txt`.
-
-`python scripts/pipeline.py --so-treino` reaproveita o `data/dataset.csv` existente e só retreina e recalibra (não baixa o clima nem refaz o dataset).
-
-## Abrir a aplicação
-
-```
+# 2. Abrir o site
 .venv\Scripts\python app.py
 ```
 
-Acesse http://127.0.0.1:5000. A interface tem quatro páginas: **Início**, **Plataforma de análise** (formulário em cinco grupos e painel de resultados com indicadores, gráficos e recomendações), **Metodologia** (fontes, variáveis, cálculos, critérios, modelo e limitações) e **Sobre o projeto**.
+Acesse **http://127.0.0.1:5000**. O modelo treinado já vem no repositório (`models/`), então não é preciso treinar para usar.
 
-## Localização da propriedade
+<details>
+<summary><b>Retreinar o modelo</b></summary>
 
-O agricultor escolhe o local da propriedade que quer analisar, onde quer que ela fique; a posição de quem acessa o sistema nunca é usada. Na plataforma há três opções:
-
-- **Local de referência (Passo Fundo – RS):** onde o modelo foi treinado.
-- **Município:** digite o nome (há sugestões) e, se houver homônimos, o estado. Usa-se a sede do município. A busca e a altitude vêm da API do Open-Meteo.
-- **Coordenadas:** latitude e longitude em graus decimais (aceita vírgula), com altitude opcional (se vazia, é buscada). Apenas coordenadas no Brasil.
-
-Para cada análise o clima do período (da semeadura à data da análise) é buscado na NASA POWER para aquele ponto, em grade de cerca de 50 km, com cache de 6 horas.
-
-**O modelo só conhece um lugar.** Foi treinado com o clima de Passo Fundo e com análises de outubro a maio. Em localidades a mais de 50 km dali, ou em datas de junho a setembro, o resultado do modelo seria extrapolação. Nesses casos o resultado principal passa a ser o **cálculo de referência (balanço hídrico FAO-56)**, que vale em qualquer lugar, e o modelo aparece só como estimativa complementar, com aviso na tela. Para que o modelo valha em outras regiões é preciso treiná-lo com o clima delas.
-
-## Dados climáticos: atualização e período
-
-Não há data máxima fixa. A análise pode usar qualquer data desde 2010-01-01 até o **último dia completo** disponível na fonte, sem passar de hoje. O padrão do campo "data da análise" é esse último dia, e o rodapé de todas as páginas mostra até quando o clima vai e quando foi atualizado.
-
-- **Atualização automática:** ao iniciar o app, uma vez por dia, se houver internet.
-- **Atualização manual:** botão "Atualizar dados climáticos agora" na plataforma, ou `python scripts/atualizar_clima.py`. A atualização é incremental: baixa só o trecho recente (repetindo os últimos 30 dias, porque a fonte pode revisar valores) e preserva o histórico.
-- **Defasagem:** a NASA POWER tem alguns dias de atraso, e a radiação solar é a última variável a ficar pronta. Dias ainda incompletos são **descartados, nunca preenchidos**.
-- **Natureza do dado:** a NASA POWER fornece estimativas de reanálise/modelagem e satélite, não medições de estação meteorológica, e não são previsões do tempo. Valores recentes são provisórios.
-- Os modelos foram treinados com safras de 2010 a 2024. Atualizar o clima não retreina o modelo; para incluir safras mais novas no treino, altere `config.py` (`ANOS_SEMEADURA` e a divisão por anos) e rode `python scripts/pipeline.py`.
-
-## Publicação na internet
-
-O sistema é uma única aplicação Flask que serve a interface e a API. O repositório já traz `Dockerfile`, `render.yaml` (hospedagem no Render), `wsgi.py` (gunicorn) e um workflow de testes do GitHub Actions. O passo a passo está em [docs/DEPLOY.md](docs/DEPLOY.md). O GitHub Pages não serve para este projeto, porque ele só hospeda páginas estáticas e não executa Python.
-
-## Testes
-
+```bash
+.venv\Scripts\python scripts/pipeline.py
 ```
+
+Baixa o clima da NASA POWER desde 2010, simula as safras, gera o dataset, treina e compara os modelos e calibra os intervalos de predição (cerca de 3 minutos). Opções:
+
+- `--clima-sintetico`: usa clima gerado artificialmente, sem internet.
+- `--so-treino`: reaproveita o `data/dataset.csv` e só retreina e recalibra.
+
+Para atualizar só o clima salvo: `python scripts/atualizar_clima.py`.
+</details>
+
+<details>
+<summary><b>Rodar os testes</b></summary>
+
+```bash
 .venv\Scripts\python -m pytest
 ```
 
-## Resultados da comparação de modelos
+Os testes não dependem da internet: usam clima sintético. Eles também rodam no GitHub a cada envio.
+</details>
 
-Conteúdo de `reports/metricas.csv`, gerado com clima real da NASA POWER. Validação: 2020–2021; teste: 2022–2024. Todos os modelos, inclusive o selecionado (XGBoost), foram ajustados só com os anos de treino (2010–2019): a validação serve para escolher o modelo e calibrar os intervalos de predição, e o teste só para avaliar.
+<details>
+<summary><b>Publicar na internet</b></summary>
 
-| modelo | f1_macro_validacao | acuracia_balanceada_validacao | recall_classe2_validacao | f1_macro_teste | acuracia_balanceada_teste | recall_classe2_teste | selecionado |
-|---|---|---|---|---|---|---|---|
-| RegressaoLogistica | 0.6976 | 0.7237 | 0.9248 | 0.7412 | 0.7488 | 0.8186 | False |
-| RandomForest | 0.7983 | 0.8042 | 0.9299 | 0.8501 | 0.8493 | 0.9154 | False |
-| XGBoost | 0.8285 | 0.8338 | 0.9467 | 0.8641 | 0.8584 | 0.9032 | True |
-| MLP | 0.7817 | 0.7962 | 0.9401 | 0.8401 | 0.8324 | 0.8724 | False |
-| Dummy | 0.2211 | 0.3333 | 0.0 | 0.2267 | 0.3333 | 0.0 | False |
+O site é uma única aplicação Flask (interface e API juntas), por isso precisa de uma hospedagem que rode Python; o GitHub Pages não serve. O repositório já traz `Dockerfile`, `render.yaml` e `wsgi.py`. Passo a passo em [`docs/DEPLOY.md`](docs/DEPLOY.md).
+</details>
 
-## Intervalos de predição (predição conformal)
+---
 
-Para classificação, o equivalente do intervalo de predição é um **conjunto de classes** que contém a classe verdadeira em pelo menos 90% dos casos (`CONFORMAL_ALFA = 0,10` em `config.py`). Na tela principal aparece só uma linha: "✓ Resultado confiável" (conjunto com 1 classe) ou "⚠ Resultado incerto: pode ser também ..." (2 ou 3 classes). O conjunto, o nível de 90% e a cobertura medida no teste ficam em "Ver detalhes técnicos".
+## 📁 Estrutura do projeto
 
-- **Método:** predição conformal *split*, com a nota 1 − probabilidade da classe verdadeira, programada à mão com numpy (módulo `hidrica/conformal.py`; sem MAPIE, para não somar dependências). O conjunto nunca fica vazio: sempre inclui a classe mais provável.
-- **Calibração:** nos anos de validação (2020–2021). Por isso **o modelo final é ajustado só com 2010–2019**: se ele tivesse visto os anos de calibração, pareceria mais certo do que é e todos os conjuntos teriam 1 classe. O limiar calibrado fica em `models/metadata.json`, no campo `conformal`, e o site não recalcula nada.
-- **Escolha do método:** o modo `auto` usa o LAC global, mas troca para **Mondrian** (um limiar por classe) se, na própria calibração, alguma classe ficar abaixo de 85% de cobertura. A decisão é tomada sem olhar o teste. Aqui foi escolhido o método **mondrian**.
-- **Fora do domínio de treino** (localidade a mais de 50 km de Passo Fundo ou análise de junho a setembro) o resultado vem do cálculo FAO-56 e **o intervalo não é mostrado**: a garantia de cobertura só vale para casos parecidos com os da calibração.
+```
+├── app.py                 # site Flask: páginas, formulário e API
+├── config.py              # culturas, solos, anos de treino e outras constantes
+├── hidrica/               # o "cérebro" do sistema
+│   ├── clima.py           #   busca e atualização do clima (NASA POWER)
+│   ├── localidade.py      #   municípios, coordenadas e altitude (Open-Meteo)
+│   ├── agro.py            #   cálculos FAO-56 (ET0, Kc, água do solo)
+│   ├── dataset.py         #   simulação das safras e balanço de água
+│   ├── modelo.py          #   treino e comparação dos modelos
+│   ├── conformal.py       #   intervalos de predição
+│   └── recomendacao.py    #   validação do formulário e resultado da análise
+├── templates/  static/    # telas do site (HTML, CSS, JS, fotos)
+├── models/                # modelo treinado e seus metadados
+├── reports/               # métricas e resultados da calibração
+├── scripts/               # retreinar o modelo e atualizar o clima
+├── tests/                 # testes automatizados (pytest)
+└── docs/                  # especificação, deploy e documentos do projeto
+```
 
-Medido no teste (2022–2024, nunca usado para treinar nem calibrar), conteúdo de `reports/conformal.csv`:
+---
 
-| método | cobertura no teste | tamanho médio | 1 classe | 2 classes | 3 classes | cobertura: sem necessidade | cobertura: atenção | cobertura: irrigação recomendada |
-|---|---|---|---|---|---|---|---|---|
-| lac | 93.1% | 1.09 | 91.0% | 8.9% | 0.0% | 97.9% | 80.1% | 93.7% |
-| **mondrian (usado)** | 93.5% | 1.14 | 86.4% | 13.6% | 0.0% | 95.8% | 91.9% | 90.3% |
-| aps | 98.9% | 1.53 | 46.9% | 53.1% | 0.0% | 99.5% | 99.0% | 97.8% |
+## ⚠️ Limitações
 
-O método usado cobriu **93.5%** dos casos (meta 90%), com conjuntos de **1.14** classes em média. A cobertura por classe fica em 95.8% (sem necessidade), 91.9% (atenção) e 90.3% (irrigação recomendada). A cobertura global ficou acima da meta, o que se explica em boa parte por os anos de calibração terem sido mais difíceis para o modelo do que os de teste (F1-macro menor na calibração); é o lado seguro do erro, mas mostra que a cobertura depende do clima dos anos usados.
+- **Os rótulos são simulados.** Não existe uma base real de "precisa irrigar": os exemplos de treino vêm do balanço FAO-56. Por isso, as métricas medem a **concordância com o FAO-56**, e não o acerto em campo. Não houve validação em campo.
+- **Um único local de treino.** O modelo conhece o clima de Passo Fundo; nas outras regiões o resultado principal é o cálculo FAO-56.
+- **Parâmetros de referência.** Kc, estágios, raízes e solos vêm das tabelas do FAO-56 e ainda precisam ser conferidos ([`docs/spec.md`](docs/spec.md), seção 5).
+- **Clima regional e com atraso.** A NASA POWER é uma estimativa de satélite em grade de cerca de 50 km, com alguns dias de atraso; não é uma medição na propriedade.
+- O balanço supõe o solo cheio na semeadura, chuva totalmente aproveitada e sem subida de água do lençol freático.
 
-## Limitações
+---
 
-- **Os rótulos são simulados.** Não existem dados reais rotulados de "precisa irrigar". Os rótulos vêm de um balanço hídrico do solo (método FAO-56) aplicado a clima real e a safras simuladas. O modelo aprende a reproduzir esse cálculo a partir de um resumo do clima recente, da cultura, do solo e da última irrigação.
-- **Métrica alta não é validade agronômica.** F1 e acurácia medem a concordância com a simulação, não o acerto de uma decisão de irrigação em campo. Não foi feita validação em campo.
-- **Parâmetros a conferir.** Os valores de Kc, estágios, profundidade de raiz, fator p e umidade do solo (docs/spec.md, seção 5) são valores de referência do FAO-56 e precisam ser conferidos pela equipe. O limiar da classe "Atenção" (metade do RAW) é uma escolha de produto, não um valor agronômico.
-- O balanço assume solo na capacidade de campo na semeadura, precipitação efetiva igual à total e sem ascensão capilar.
-- Três culturas (milho, soja, feijão) e três classes de solo. O modelo foi treinado com um único ponto de clima; fora dele o resultado principal é o cálculo de referência (ver "Localização da propriedade").
-- O clima é de reanálise/satélite para um ponto, com defasagem de alguns dias; não é medição na propriedade.
+## 👥 Equipe
+
+Projeto acadêmico de **Ciência da Computação**, na área de Inteligência Artificial aplicada à agricultura.
+
+- Alisson de Morais Bosa · *Gestor Técnico*
+- Júlia de Lima Miranda · *Gestora de Projeto*
+- Carlos Eduardo Tonhelski Oliveira
+- Júlia Wonsick Pazzinatto
+- Maria Carolina Pegoraro
+- João Vinicius Lago dos Santos
+- Renan Terre Gomes
+
+---
+
+## 📚 Referências e créditos
+
+- ALLEN, R. G. et al. *Crop evapotranspiration: guidelines for computing crop water requirements*. FAO Irrigation and Drainage Paper 56. Roma: FAO, 1998.
+- AGÊNCIA NACIONAL DE ÁGUAS E SANEAMENTO BÁSICO (ANA). *Atlas irrigação: uso da água na agricultura irrigada*. 2. ed. Brasília: ANA, 2021.
+- Clima: [NASA POWER](https://power.larc.nasa.gov/). Municípios e altitude: [Open-Meteo](https://open-meteo.com/), com dados do GeoNames (CC BY 4.0).
+- Fotos: [Unsplash](https://unsplash.com), com os créditos de cada fotógrafo na página **Sobre o projeto** do site.
