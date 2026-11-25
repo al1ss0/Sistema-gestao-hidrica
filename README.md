@@ -9,12 +9,6 @@
 Diz ao produtor se é hora de irrigar a lavoura, usando o clima do lugar, o solo e a cultura.
 
 [![Acessar o site](https://img.shields.io/badge/site-hidrodecisao.onrender.com-3f9b4f?style=for-the-badge)](https://hidrodecisao.onrender.com)
-[![Testes](https://github.com/al1ss0/Sistema-gestao-hidrica/actions/workflows/ci.yml/badge.svg)](https://github.com/al1ss0/Sistema-gestao-hidrica/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/Python-3.14-1e5f8c)
-![Flask](https://img.shields.io/badge/Flask-3-0f3b27)
-![XGBoost](https://img.shields.io/badge/modelo-XGBoost-2f7d3d)
-
-<img src="static/img/fotos/topo-lavoura.jpg" width="100%" alt="Fileiras de lavoura verde até o horizonte">
 
 </div>
 
@@ -37,7 +31,6 @@ Junto com a resposta, o site mostra **quantos milímetros irrigar** e avisa se o
 > O sistema **apenas recomenda**: não controla equipamentos e não garante economia de água. A decisão continua sendo do produtor.
 
 **🌐 Teste agora:** https://hidrodecisao.onrender.com
-<sub>No plano gratuito do Render o site "dorme" quando ninguém usa; a primeira visita pode levar cerca de 1 minuto.</sub>
 
 ---
 
@@ -180,7 +173,6 @@ O site é uma única aplicação Flask (interface e API juntas), por isso precis
 
 ## 👥 Equipe
 
-Projeto acadêmico de **Ciência da Computação**, na área de Inteligência Artificial aplicada à agricultura.
 
 - Alisson de Morais Bosa · *Gestor Técnico*
 - Júlia de Lima Miranda · *Gestora de Projeto*
@@ -189,12 +181,3 @@ Projeto acadêmico de **Ciência da Computação**, na área de Inteligência Ar
 - Maria Carolina Pegoraro
 - João Vinicius Lago dos Santos
 - Renan Terre Gomes
-
----
-
-## 📚 Referências e créditos
-
-- ALLEN, R. G. et al. *Crop evapotranspiration: guidelines for computing crop water requirements*. FAO Irrigation and Drainage Paper 56. Roma: FAO, 1998.
-- AGÊNCIA NACIONAL DE ÁGUAS E SANEAMENTO BÁSICO (ANA). *Atlas irrigação: uso da água na agricultura irrigada*. 2. ed. Brasília: ANA, 2021.
-- Clima: [NASA POWER](https://power.larc.nasa.gov/). Municípios e altitude: [Open-Meteo](https://open-meteo.com/), com dados do GeoNames (CC BY 4.0).
-- Fotos: [Unsplash](https://unsplash.com), com os créditos de cada fotógrafo na página **Sobre o projeto** do site.
